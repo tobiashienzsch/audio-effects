@@ -7,7 +7,9 @@ book:
   chapters:
     - index.qmd
     - src/intro.qmd
-    - src/summary.qmd
+    - src/overview.qmd
+    - src/testing.qmd
+    - src/open_source.qmd
     - src/references.qmd
 
 toc: true

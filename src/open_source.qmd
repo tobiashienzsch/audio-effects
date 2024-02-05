@@ -1,0 +1,5 @@
+# Open Source
+
+- <https://github.com/fluffyaudio/MultiVersio>
+- <https://github.com/velipso/sndfilter>
+- <https://github.com/WebKit/WebKit/tree/main/Source/WebCore/platform/audio>

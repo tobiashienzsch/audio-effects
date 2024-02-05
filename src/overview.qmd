@@ -1,0 +1,905 @@
+# Overview
+
+## Filter
+
+- [THE ART OF VA FILTER DESIGN](https://www.native-instruments.com/fileadmin/ni_media/downloads/pdf/VAFilterDesign_2.0.0a.pdf)
+
+### IIR
+
+### StateVariableFilter
+
+### FIR
+
+### Dynamic Smoothing
+
+- <https://cytomic.com/files/dsp/DynamicSmoothing.pdf>
+
+## Dynamic
+
+### Compressor
+
+### Expander
+
+### Limiter
+
+### Transient Shaper
+
+An audio transient shaper is a type of audio effect that is used to modify the transient (attack and decay) characteristics of an audio signal. Transient shaping is often used to alter the perceived punch, clarity, and energy of a sound, and it can be applied to a wide range of audio material, including drums, percussion, bass, and vocals.
+
+There are a number of different approaches that can be used to implement an audio transient shaper effect, but one common method is to use a compressor or envelope follower to detect the transients in the audio signal, and then apply gain modification to the transients based on a user-specified curve.
+
+Here is an example of how an audio transient shaper effect could be implemented in Python using the NumPy library:
+
+```py
+import numpy as np
+
+def transient_shaper(audio, curve, threshold=0.1, ratio=2.0, attack=5, release=50):
+  # Create an envelope follower using a compressor
+  envelope = np.zeros(len(audio))
+  for i in range(1, len(audio)):
+    if abs(audio[i]) > envelope[i-1]:
+      envelope[i] = attack * (abs(audio[i]) - envelope[i-1]) + envelope[i-1]
+    else:
+      envelope[i] = release * (abs(audio[i]) - envelope[i-1]) + envelope[i-1]
+
+  # Apply gain modification to the transients based on the curve
+  for i in range(len(audio)):
+    if envelope[i] > threshold:
+      audio[i] *= curve[int(envelope[i] * len(curve))]
+
+  return audio
+
+# Example usage: apply a transient shaper curve to an audio signal
+audio = np.random.random(44100)  # generate a random audio signal
+curve = np.linspace(0, 2, 100)  # create a linear transient shaper curve
+audio = transient_shaper(audio, curve)  # apply the transient shaper to the audio
+```
+
+This example defines a function transient_shaper that takes an audio signal and a transient shaper curve as inputs, and applies gain modification to the transients in the signal based on the curve. The function first uses a compressor to detect the transients in the signal, and then applies gain modification to the transients based on the curve. The curve can be specified by the user and can take any form, such as a linear curve or a more complex curve with multiple segments.
+
+Keep in mind that this is just one way to implement an audio transient shaper effect, and there are other approaches that may be more suitable for different applications. The specific implementation will depend on the desired behavior and characteristics of the effect.
+
+## Distortion
+
+- <http://www.dangelo.audio/#research>
+
+### ADAA
+
+- <https://ccrma.stanford.edu/~jatin/Notebooks/adaa.html>
+- <https://github.com/jatinchowdhury18/ADAA>
+- <https://github.com/jatinchowdhury18/audio_dspy/blob/master/audio_dspy/nonlinearities.py>
+- [ARBITRARY-ORDER IIR ANTIDERIVATIVE ANTIALIASING](https://www.dafx.de/paper-archive/2021/proceedings/papers/DAFx20in21_paper_27.pdf)
+
+
+## Virtual Analog
+
+### Nodal Analysis
+
+- [JUCE: DK-Method (GitHub)](https://github.com/joaorossi/dkmethod)
+- [JUCE: DK-Method (PDF)](https://raw.githubusercontent.com/joaorossi/dkmethod/master/docs/DK-Method%20for%20JUCE.pdf)
+- [Matlab: DK-Method](https://github.com/jardamacak/NodalDKFramework)
+- [Zvex Wooly Mammoth: Schematic](http://effectslayouts.blogspot.com/2014/12/zvex-wooly-mammoth.html)
+- [Nodal Analysis: BJT & Tube](https://ccrma.stanford.edu/~dtyeh/papers/yeh12_taslp.pdf)
+
+### Wave-Digital Filter
+
+## Frequency
+
+### Phaser
+
+```py
+import numpy as np
+
+def phaser(audio, depth=0.5, rate=1.0, feedback=0.5, mix=0.5):
+  # Create a buffer to store the modulated signal
+  buffer = np.zeros(len(audio))
+
+  # Create a phase modulation oscillator
+  phase_mod = np.zeros(len(audio))
+  for i in range(1, len(audio)):
+    phase_mod[i] = phase_mod[i-1] + rate / 44100  # update phase
+  phase_mod = np.sin(2 * np.pi * phase_mod)  # generate phase modulation
+
+  # Create a series of all-pass filters
+  num_filters = 8
+  filters = [np.zeros(len(audio)) for _ in range(num_filters)]
+  for i in range(1, len(audio)):
+    # Update the coefficients of the all-pass filters
+    coeff = np.exp(-2 * np.pi * depth * phase_mod[i] / num_filters)
+    for j in range(num_filters):
+      filters[j][i] = coeff * (filters[j][i-1] + audio[i] - feedback * filters[j][i-1]) + audio[i] - coeff * filters[j][i-1]
+    # Combine the output of the all-pass filters
+    buffer[i] = sum(filters[j][i] for j in range(num_filters))
+
+  # Mix the original audio with the modulated signal
+  audio = mix * audio + (1 - mix) * buffer
+
+  return audio
+```
+
+```py
+class Phaser:
+    def __init__(self, sample_rate, num_filters, base_frequency, frequency_spread):
+        self.sample_rate = sample_rate
+        self.allpass_filters = []
+        self.num_filters = num_filters
+        self.base_frequency = base_frequency
+        self.frequency_spread = frequency_spread
+        self.initialize_filters()
+
+    def initialize_filters(self):
+        for i in range(self.num_filters):
+            frequency = self.base_frequency + i * self.frequency_spread
+            allpass_filter = AllpassFilter(frequency, self.sample_rate)
+            self.allpass_filters.append(allpass_filter)
+
+    def process(self, audio):
+        output = np.zeros(len(audio))
+        for i in range(self.num_filters):
+            allpass_output = self.allpass_filters[i].process(audio)
+            output += allpass_output
+        return output
+```
+
+The `Phaser` class takes in a sample rate, number of filters, base frequency and frequency spread, it creates an array of all-pass filters, each with a slightly different cutoff frequency. The `initialize_filters` method is used to create the all-pass filters with the given parameters, the `process` method applies each filter to the audio signal in parallel, sums up the output of each filter and returns the final output.
+
+The `base_frequency` parameter determines the center frequency of the phaser effect, and the `frequency_spread` parameter determines the range of frequencies that will be affected by the phaser effect. With a higher frequency spread, the phaser effect will affect a wider range of frequencies. Using `num_filters` will decide the number of all-pass filter that would be used to create the phaser effect. You can experiment with different values for these parameters to achieve the desired phaser effect.
+
+It's worth noting that a Phaser effect can be implemented in many other ways, for example, by using modulated filters, or by applying different frequency modulations and you can also experiment with different types of all-pass filter.
+
+The values for the `base_frequency` and `frequency_spread` parameters will depend on the specific sound you are trying to achieve with the phaser effect and the audio material you are processing. In general, the base frequency should be in the range of around 500 Hz to 1500 Hz and the frequency spread should be in the range of around 50 Hz to 200 Hz.
+
+For a more subtle phaser effect, a lower base frequency of around 500 Hz and a lower frequency spread of around 50 Hz might be appropriate. This will create a phaser effect that affects mostly low-mid frequencies and has a more subtle and smooth character.
+
+For a more pronounced phaser effect, a higher base frequency of around 1500 Hz and a higher frequency spread of around 200 Hz might be appropriate. This will create a phaser effect that affects mostly high-mid frequencies and has a more pronounced and dramatic character.
+
+It's worth noting that you should always listen to the effect and adjust these parameters according to the specific audio material you're processing and the desired effect.
+Also, it's worth noticing that different audio material will respond differently to these parameter so it's better to experiment and adjust them accordingly.
+
+To modulate the cutoff frequency of the all-pass filters in the phaser effect, you can use a modulating signal such as a low-frequency oscillator (LFO) to create a time-varying cutoff frequency.
+
+Here's an example of how you could modify the Phaser class to include an LFO and modulate the cutoff frequency of the all-pass filters with it:
+
+```py
+class Phaser:
+    def __init__(self, sample_rate, num_filters, base_frequency, frequency_spread, lfo_frequency):
+        self.sample_rate = sample_rate
+        self.allpass_filters = []
+        self.num_filters = num_filters
+        self.base_frequency = base_frequency
+        self.frequency_spread = frequency_spread
+        self.lfo_frequency = lfo_frequency
+        self.initialize_filters()
+        self.phase = 0
+
+    def initialize_filters(self):
+        for i in range(self.num_filters):
+            frequency = self.base_frequency + i * self.frequency_spread
+            allpass_filter = AllpassFilter(frequency, self.sample_rate)
+            self.allpass_filters.append(allpass_filter)
+
+    def process(self, audio):
+        output = np.zeros(len(audio))
+        for i in range(len(audio)):
+            # Generate the LFO value for this sample
+            lfo_value = np.sin(2 * np.pi * self.lfo_frequency * i / self.sample_rate + self.phase)
+
+            # Update the cutoff frequency for each all-pass filter
+            for j in range(self.num_filters):
+                cutoff_frequency = self.base_frequency + j * self.frequency_spread + lfo_value * self.frequency_spread
+                self.allpass_filters[j].cutoff_frequency = cutoff_frequency
+
+            # Process the audio through the all-pass filters
+            allpass_output = np.zeros(len(audio))
+            for j in range(self.num_filters):
+                allpass_output += self.allpass_filters[j].process(audio[i])
+
+            # Add the output to the final output buffer
+            output[i] = allpass_output
+
+        # Store the current phase for next block processing
+        self.phase = 2 * np.pi * self.lfo_frequency * len(audio) / self.sample_rate + self.phase
+        return output
+```
+
+### Sub-Harmonic Generator
+
+A sub-harmonic generator is a type of audio effect that is used to generate new frequencies that are lower than the original frequencies in the audio signal. It is often used to add depth and power to bass instruments, such as bass guitar and synthesizers, and it can be used in a variety of applications, including music production, sound design, and film and television post-production.
+
+Here is an example of how a sub-harmonic generator could be implemented in Python using the NumPy library:
+
+```py
+import numpy as np
+
+def subharmonic_generator(audio, order=1, gain=1.0):
+  # Create a buffer to store the output signal
+  output = np.zeros(len(audio))
+
+  # Generate the sub-harmonics
+  for i in range(len(audio)):
+    # Determine the sub-harmonic frequency
+    subharmonic_freq = i * (1.0 / order)
+
+    # Interpolate the input signal at the sub-harmonic frequency
+    interpolated_value = np.interp(subharmonic_freq, np.arange(len(audio)), audio)
+
+    # Add the interpolated value to the output signal
+    output[i] += gain * interpolated_value
+
+  return output
+
+```
+
+This function takes an audio signal as input, as well as two parameters that control the order of the sub-harmonics (i.e. the number of octaves below the original frequency) and the gain of the sub-harmonics. It generates the sub-harmonics by interpolating the input signal at the desired sub-harmonic frequencies and adding the interpolated values to the output signal. The specific implementation and parameters of the effect will depend on the desired behavior and characteristics of the effect.
+
+A more sophisticated implementation of a sub-harmonic generator might include the following features:
+
+- Multiple sub-harmonic orders: The ability to generate sub-harmonics at multiple octaves below the original frequencies, with separate controls for the gain of each order.
+- Filter control: The ability to shape the frequency response of the sub-harmonics using filters, such as low-pass, high-pass, or band-pass filters. This can be used to shape the timbre of the sub-harmonics and to eliminate unwanted frequencies.
+- Envelope follower: The ability to control the gain of the sub-harmonics using an envelope follower, which tracks the envelope of the input signal and adjusts the gain of the sub-harmonics in response. This can be used to create more dynamic and expressive sub-harmonic effects.
+- Mix control: The ability to control the balance between the original audio and the sub-harmonics using a mix control. This can be used to blend the sub-harmonics with the original signal in a natural way.
+
+Here is an example of how a more sophisticated sub-harmonic generator could be implemented in Python using the NumPy library:
+
+```py
+import numpy as np
+
+def subharmonic_generator(audio, orders=[1], gains=[1.0], filters=[None], envelope_follow=False, mix=1.0):
+  # Create a buffer to store the output signal
+  output = np.zeros(len(audio))
+
+  # Create the envelope follower
+  envelope = np.zeros(len(audio))
+  if envelope_follow:
+    envelope[0] = np.abs(audio[0])
+    for i in range(1, len(audio)):
+      envelope[i] = 0.9 * envelope[i-1] + 0.1 * np.abs(audio[i])
+
+  # Generate the sub-harmonics
+  for i in range(len(audio)):
+    for order, gain in zip(orders, gains):
+      # Determine the sub-harmonic frequency
+      subharmonic_freq = i * (1.0 / order)
+
+      # Interpolate the input signal at the sub-harmonic frequency
+      interpolated_value = np.interp(subharmonic_freq, np.arange(len(audio)), audio)
+
+      # Apply the filter, if specified
+      if filters[order-1] is not None:
+        interpolated_value = np.convolve(interpolated_value, filters[order-1], mode='same')
+
+      # Apply the envelope follower, if enabled
+      if envelope_follow:
+        interpolated_value *= envelope[i]
+
+      # Add the interpolated value to the output signal
+      output[i] += gain * interpolated_value
+
+  # Mix the original audio with the sub-harmonics
+  audio = mix * audio + (1 - mix) * output
+
+  return audio
+```
+
+## Delay
+
+### Ping-Pong Delay
+
+In a true ping-pong delay effect, the delay times for the left and right channels are different, and the delayed sound bounces back and forth between the channels, creating a sense of movement.
+
+For a Ping-pong effect, the delay times for left and right channels can be calculated from a given delay time (let's call it t) and the desired stereo width of the effect (let's call it s). The stereo width (s) can be a value between 0 and 1, where 0 means a mono effect, and 1 means a maximum stereo width.
+
+Here is one formula you can use to calculate the delay time for the left and right channels, assuming that the desired stereo width (s) and delay time (t) are already known:
+
+```py
+left_delay_time = t * (1 - s)
+right_delay_time = t * (1 + s)
+```
+
+This formula calculates the delay time for the left channel as a percentage of the delay time for the right channel. The left channel has a delay time that is (1 - s) times the original delay time, and the right channel has a delay time that is (1 + s) times the original delay time.
+
+It's worth noting that this formula assumes the stereo width is symmetric, which means the left channel will have the same time delay but in opposite phase than the right channel, so that the sound will bounce back and forth between them. However, there are other ways of creating stereo width using other parameters like feedback gain, and feedback panning.
+
+**Using feedback gain:** You could use different feedback gain values for the left and right channels to create the ping-pong effect. For example, you could use a feedback gain of 0.5 for the left channel and 0.7 for the right channel. This would create a stereo effect where the sound bounces back and forth between the left and right channels, with the right channel having a slightly louder feedback than the left channel, creating the sense of movement.
+
+```py
+left_feedback = 0.5
+right_feedback = 0.7
+```
+
+**Using feedback panning:** You could use different feedback panning values for the left and right channels to create the ping-pong effect. For example, you could use a feedback panning value of -0.7 for the left channel and 0.7 for the right channel. This would create a stereo effect where the sound bounces back and forth between the left and right channels, with the left channel having a hard-left panning value and the right channel having a hard-right panning value, creating the sense of movement.
+
+```py
+left_feedback_panning = -0.7
+right_feedback_panning = 0.7
+```
+
+It's worth noting that these are just examples, and you can experiment with different values for the feedback gain and feedback panning to achieve the desired stereo width and sense of movement for the effect. Also, these examples are applied on the feedback signals, so you will have to adapt them to your implementation.
+
+## Pitch Shifting
+
+The Time-domain pitch shifting method involves modifying the temporal positions of the samples, this can be done by a simple time-stretching, or using more advanced techniques such as WSOLA (Waveform Similarity-based Overlap-and-add) or TSOLA (Time-Scale Modification Using Overlap-Add) which are time-domain pitch shifting techniques that allow for smooth pitch shifting with minimal artifacts.
+
+Frequency-domain pitch shifting, on the other hand, involves modifying the frequency content of the signal. One way to do this is by using the Short-Time Fourier Transform (STFT) to convert the signal to the frequency domain, then shifting the frequencies, and finally converting the signal back to the time domain using the inverse STFT. A popular algorithm that uses this approach is the Phase Vocoder. It uses the STFT to analyze a signal in the frequency domain and provides precise control over the pitch, formants, and duration of the audio.
+
+Also, there's a technique called "Automatic Pitch Correction" which can detect the pitch of the signal and corrects it according to a desired target pitch, this can be done using pitch detection algorithms such as the YIN algorithm, and pitch shifting algorithms such as the PSOLA algorithm. The most well-known software that use this technique is the Auto-Tune.
+
+All these methods have their pros and cons and are suitable for different use cases, and also there's a trade-off between quality and computational cost.
+
+### Auto-Tune
+
+Auto-Tune is a popular audio effect that is used to automatically correct or modify the pitch of a recording to match a specific musical scale or key. It is often used to correct minor pitch variations in a performance and to create a distinctive, stylized sound.
+
+There are a few different algorithms used to implement the Auto-Tune effect, but one common approach is based on pitch detection and pitch shifting. The basic process for implementing Auto-Tune using this approach is as follows:
+
+1. Split the audio signal into overlapping frames of a short duration (usually around 10-20 milliseconds).
+2. Analyze the pitch of each frame using a pitch detection algorithm, such as an autocorrelation or a frequency domain analysis.
+3. Compare the detected pitch to the desired pitch or scale, and calculate the pitch shift needed to match the desired pitch.
+4. Shift the pitch of the frame to the desired pitch, using a pitch shifting algorithm, such as a time-domain pitch shifting or a frequency-domain pitch shifting.
+5. Overlap and add the pitch-shifted frames to reconstruct the output audio.
+
+There are different approaches for the pitch detection, for example using the pitch detection algorithm developed by McLeod and others, frequency domain method like the YIN pitch detection algorithm. Additionally, the pitch shifting can be accomplished using different methods, like the pitch shifting algorithm developed by D. G. Campell which is widely used today.
+
+The specific implementation and parameters of the effect will depend on the desired behavior and characteristics of the effect. Auto-Tune effect's parameters may include the key of the song, a 'retune speed', a 'humanize' option, and the target pitch.
+
+It's worth noting that a common criticism is that overuse of Auto-Tune can make vocals sound artificial or robotic, especially when the effect is applied too heavily.
+
+### Pitch Synchronous Overlap and Add
+
+The pitch shifting algorithm developed by D. G. Campell, often referred to as the "PSOLA" (Pitch Synchronous Overlap and Add) algorithm, is a popular method for performing pitch shifting on an audio signal. The basic idea behind the algorithm is to shift the pitch of an audio signal by changing the length of the individual samples, while maintaining the original temporal position of the samples.
+
+The PSOLA algorithm works by dividing the input audio signal into overlapping frames of a short duration (usually around 10-20 milliseconds). For each frame, the pitch shift is calculated and applied by stretching or shrinking the frame by the appropriate amount. The frames are then overlap-added together to reconstruct the output audio signal.
+
+To perform the pitch shifting, PSOLA uses the principle of time-scale modification. It stretches or shrinks small parts of the signal to change its pitch. The algorithm can then apply the time-scale modification locally on the signal, without changing its duration.
+
+The PSOLA algorithm can be further enhanced with methods such as time-domain formant preservation, to reduce the formant distortion introduced by the pitch shifting, or using a pitch synchronous windowing technique, which allows the algorithm to align and overlap frames based on their pitch period.
+
+The PSOLA algorithm is considered a high-quality and efficient method for pitch shifting, and it is widely used in a variety of audio processing applications, including Auto-Tune and other pitch correction software, speech synthesis, and audio resampling.
+
+```py
+import numpy as np
+
+def psola(audio, pitch_ratio, frame_size, hop_size):
+    # Determine the number of frames
+    num_frames = int((len(audio) - frame_size) / hop_size) + 1
+
+    # Allocate memory for the output audio
+    output = np.zeros(len(audio))
+
+    # Initialize the read and write pointers
+    read_pointer = 0
+    write_pointer = 0
+
+    for i in range(num_frames):
+        # Get the current frame from the input audio
+        frame = audio[read_pointer:read_pointer+frame_size]
+
+        # Get the next frame by shifting the read pointer
+        read_pointer += int(hop_size * pitch_ratio)
+        next_frame = audio[read_pointer:read_pointer+frame_size]
+
+        # Interpolate the next frame to match the length of the current frame
+        next_frame = np.interp(np.linspace(0, len(next_frame)-1, len(frame)),
+                              np.arange(len(next_frame)), next_frame)
+
+        # Overlap and add the current and next frames
+        overlap = (frame + next_frame) / 2
+        output[write_pointer:write_pointer+len(overlap)] += overlap
+
+        # Update the write pointer
+        write_pointer += int(hop_size)
+
+    return output
+```
+
+PSOLA stands for Pitch Synchronous Overlap-Add. It's an algorithm used to shift the pitch of an audio signal without changing its duration. PSOLA algorithm is based on the following steps:
+
+1. The audio signal is divided into overlapping frames
+2. The pitch ratio is applied to the frames, i.e., a ratio of 1.0 corresponds to no pitch shift, a ratio of 2.0 corresponds to an octave shift, and a ratio of 0.5 corresponds to an octave shift in the opposite direction
+3. Next, the frames are overlapped and added together to create the final output
+
+In the provided example, the PSOLA algorithm is implemented by the function `psola(audio, pitch_ratio, frame_size, hop_size)` where:
+
+- `audio` is the audio signal to be processed.
+- `pitch_ratio` is the factor by which the pitch of the audio signal will be shifted.
+- `frame_size` is the size of the frames in samples
+- `hop_size` is the number of samples between the start of consecutive frames.
+
+The function first calculates the number of frames by dividing the length of the audio signal by the hop size. Then it creates an empty array output of the same size as the audio signal. Using a while loop it processes each frame by:
+
+- grabbing the current frame from the audio signal using the read_pointer
+- shifting the read_pointer by the `hop_size * pitch_ratio` to grab the next frame
+- interpolating the next frame to match the size of the current frame using numpy's interp function
+- adding current and next frame to create overlap
+- updating the write_pointer
+- adding the overlap to the output array
+
+## Resample
+
+There are several different approaches to audio resampling, each with its own strengths and weaknesses. If you're just getting started with learning about audio resampling, here are a few areas you might consider exploring:
+
+- **Theory of Sampling:** Understanding the theory of sampling is crucial for understanding audio resampling. This includes concepts such as Nyquist frequency, aliasing, and anti-aliasing. A good place to start is by reading the original Nyquist paper: "Certain factors affecting telegraph speed" (1928) by Harry Nyquist.
+- **Interpolation:** Interpolation is a key part of audio resampling. It involves estimating the value of a signal at points between the original samples. Understanding the different types of interpolation methods, such as linear interpolation, spline interpolation, and sinc interpolation is important when selecting a method for resampling.
+- **Resampling Algorithms:** There are several common audio resampling algorithms such as the Zero Order Hold, linear interpolation, and polyphase filter implementation. Understanding the trade-offs and best use-cases of each algorithm can be crucial when selecting the right algorithm for a specific task.
+- **Quality Metrics:** To evaluate the quality of the resampling process, you should familiarize yourself with the common audio quality metrics such as the PSNR, MSE, SSIM and PEAQ.
+- **Practice:** Finally, practice implementing different resampling algorithms using programming tools and libraries such as python, Matlab or C++. This will give you a hands-on understanding of how resampling algorithms work and help you develop a sense of when to use a particular algorithm.
+
+It's important to understand that while audio resampling is a well-established field, there's always room for innovation and research in this area. Keeping up to date with the latest research in audio resampling and digital signal processing in general can be a good way to continue learning and expanding your knowledge.
+
+- **Zero Order Hold (ZOH):** The Zero Order Hold (ZOH) is a simple and computationally efficient method for resampling a signal. The basic idea behind ZOH is to hold the value of the signal constant between each sample, and then select new samples at the desired rate. ZOH is easy to implement and computationally efficient, but it can introduce significant aliasing and distortion.
+- **Linear Interpolation:** Linear interpolation is a resampling method that estimates the value of a signal at points between the original samples by fitting a straight line between the two closest samples. Linear interpolation is an improvement over ZOH, as it reduces the amount of aliasing and distortion. However, it is still relatively simple and computationally efficient.
+- **Polyphase filter:** Polyphase filter is a technique for resampling a signal by using a bank of filters, where each filter is designed for a specific sample rate ratio. The main advantage of the polyphase filter is the ability to design the filter bank such that it's more efficient in the stop-band, and reduce the effect of aliasing to a minimum. They are often used in conjunction with other anti-aliasing filters, like a low-pass filter, which will improve even more the quality of the resampled signal.
+
+It's worth noting that each of these algorithms has its own unique trade-offs, and the choice of which algorithm to use depends on the specific use case and the desired balance between computational efficiency and output quality.
+
+In general, zero order hold is the most computationally efficient and simple of the three methods, but it can produce significant aliasing and distortion. Linear interpolation is a significant improvement, but it can still introduce some distortion. Polyphase filters are the most complex and computationally intensive of the three, but they also produce the highest-quality output, with the least distortion and aliasing.
+
+### Linear Interpolation Resampler
+
+```py
+import numpy as np
+
+def linear_interpolation_downsampling(signal, factor):
+    """
+    Downsamples the input signal using linear interpolation
+
+    Parameters:
+    signal (1d array): The input signal
+    factor (int): The downsampling factor
+
+    Returns:
+    downsampled (1d array): The downsampled signal
+    """
+    # Number of samples in the input signal
+    N = len(signal)
+
+    # Create an array of indices at which to sample the input signal
+    indices = np.linspace(0, N-1, N//factor, endpoint=False)
+    indices = indices.astype(np.int)
+
+    # Select samples at the new indices
+    downsampled = signal[indices]
+
+    # Linear interpolation
+    for i in range(1, len(downsampled)):
+        fraction = indices[i] - indices[i-1] - 1
+        increment = (signal[indices[i]] - signal[indices[i-1]]) / (fraction + 1)
+        for j in range(1, fraction + 1):
+            downsampled = np.insert(downsampled, i+j-1, signal[indices[i-1]] + j*increment)
+
+    return downsampled
+```
+
+In this example, the input signal is a 1D array of samples and the downsampling factor is an integer specifying how much the signal should be downsampled (e.g. a factor of 2 will downsample the signal to half its original rate).
+
+The function first creates an array of indices at which to sample the input signal, using numpy's `linspace` function. The indices array is then converted to integer, since the signal array is indexed by integer position. After this, it selects the samples at the new indices, and these are stored in the downsampled array.
+
+Then, it performs a linear interpolation on the downsampled signal by iterating through the array of samples, computing the increment between each adjacent pair of samples and inserting the extra samples to create a smooth transition between the adjacent pair of samples.
+
+Keep in mind that downsampling audio data will lose information and quality. It's always recommended to use a low-pass filter to mitigate this effect before downsampling, it will help to remove the high frequencies which will not be present in the downsampled signal.
+
+### Polyphase Filter Resampler
+
+```py
+import scipy.signal as sig
+
+def polyphase_resampling(signal, factor, filter_type='FIR', upsample=False):
+    """
+    Resamples the input signal using a polyphase filter
+
+    Parameters:
+    signal (1d array): The input signal
+    factor (int): The resampling factor
+    filter_type (str): The type of filter to use. Can be 'FIR' or 'IIR'.
+    upsample (bool): The flag to indicate if we want to upsample or downsample
+
+    Returns:
+    resampled (1d array): The resampled signal
+    """
+    # Number of taps for the low-pass filter
+    numtaps = 64
+
+    # Design the low-pass filter
+    if upsample:
+        cutoff = (1-1/(factor+1))/2
+    else:
+        cutoff = 1/factor
+
+    if filter_type == 'FIR':
+        lowpass_coeffs = sig.firwin(numtaps, cutoff)
+    elif filter_type == 'IIR':
+        lowpass_coeffs = sig.iirfilter(numtaps, cutoff)
+    else:
+        raise ValueError("filter_type must be 'FIR' or 'IIR'")
+
+    # Apply the low-pass filter
+    filtered = sig.lfilter(lowpass_coeffs, 1, signal)
+
+    # Create the polyphase filter bank
+    poly_filters = sig.decimate(lowpass_coeffs, factor, n=numtaps, ftype='fir')
+
+    if upsample:
+        # Add zeros between each sample in the filtered signal
+        upsampled = np.zeros(len(filtered) * factor)
+        upsampled[::factor] = filtered
+        resampled = []
+        for pf in poly_filters:
+            resampled.append(sig.lfilter(pf, 1, upsampled)[::factor])
+    else:
+        # Apply the polyphase filter bank
+        resampled = []
+        for pf in poly_filters:
+            resampled.append(sig.lfilter(pf, 1, filtered)[::factor])
+    return resampled
+```
+
+In this example, I've added an optional parameter upsample, a flag that indicates whether you want to upsample or downsample the input signal.
+
+For upsampling, it sets the low-pass filter's cutoff frequency to be the center frequency of the pass-band. The low-pass filter will pass all the frequencies below the cutoff frequency.
+Then, the function adds zeros between each sample in the filtered signal, the filter bank is then applied to the upsampled signal to reshape the output to the correct format.
+
+For downsampling, it works similar to the previous example but applying the filter bank on the filtered signal directly.
+
+By setting the upsample parameter to True or False, you can use the same function to both upsample and downsample your audio signal. It's worth noting that the upsampling process will introduce a high-frequency content that was not present in the original signal.
+
+### Testing Resamplers
+
+There are several algorithms that can be used to test the quality of an audio resampling algorithm. Some of the most common include:
+
+1. **Peak Signal-to-Noise Ratio (PSNR):** PSNR is a measure of the difference between the original signal and the resampled signal, in terms of power. It is calculated as the ratio of the peak power of the original signal to the mean square error between the original signal and the resampled signal.
+2. **Mean Squared Error (MSE):** MSE is a measure of the average squared difference between the original signal and the resampled signal. It is calculated by taking the mean of the square of the difference between the original signal and the resampled signal.
+3. **Structural Similarity Index (SSIM):** SSIM is a measure of the similarity between the original signal and the resampled signal based on the structural and visual quality. It is calculated by comparing different statistical properties of the two signals, such as mean, standard deviation, and cross-covariance.
+4. **Frequency-domain Metrics:** like the Spectral Linearity, Signal-to-Noise Ratio in the Frequency Domain (SNR-FD), and Spectral Flatness. These metrics are based on the analysis of the signal in the frequency-domain, can give you a good insight into the performance of the algorithm, the quality of the frequency representation, and it's linearity.
+5. **Perceptual Metrics:** Like the PEAQ (Perceptual Evaluation of Audio Quality) or ITU-R BS.1770, which are not only based on the signal but also on psychoacoustic and auditory perception. These metrics take into account not just the technical characteristics of the sound but also how it is perceived by the human ear.
+
+It's worth noting that these metrics are not mutually exclusive and can provide complementary information about the performance of an audio resampling algorithm. For example, PSNR and MSE are good indicators of the quantization error introduced by the algorithm, while SSIM and PEAQ provide more information about the perceived quality of the resampled audio. Additionally, it's worth to evaluate the performance of the algorithm on a wide variety of audio content, to check if it performs well across different types of audio material.
+
+## Reverb
+
+### Schroeder Reverberation
+
+Schroeder reverberation is a simple algorithm that simulates the reverberation of sound by summing several delayed and attenuated versions of the input audio, each with a different delay time. The algorithm is named after Manfred R. Schroeder, who first proposed the idea in the 1960s.
+
+Here is an example of how you could implement a Schroeder reverberation effect in Python:
+
+```py
+import numpy as np
+
+def schroeder_reverb(audio, delay_times, decay_times):
+    output = np.zeros(len(audio))
+
+    for i in range(len(delay_times)):
+        delay = int(delay_times[i] * 44100) # convert seconds to samples
+        decay = decay_times[i]
+        output += np.roll(audio, delay) * decay
+
+    return output
+
+# Example usage
+audio = ... # load the audio
+delay_times = [0.02, 0.03, 0.04] # in seconds
+decay_times = [0.5, 0.3, 0.2]
+output = schroeder_reverb(audio, delay_times, decay_times)
+```
+
+This example defines a function schroeder_reverb(audio, delay_times, decay_times) that takes in an audio signal, a list of delay times, and a list of decay times. The function applies several delayed and attenuated versions of the input audio, each with a different delay time, simulating the reflections of sound in a room.
+
+
+### FDN
+
+- [Feedback Delay Networks for Artificial Reverberation - Sebastian Schlecht](https://www.youtube.com/watch?v=gRiZX7C6zJo)
+- [Let's Write A Reverb](https://signalsmith-audio.co.uk/writing/2021/lets-write-a-reverb/)
+- [github.com/SebastianJiroSchlecht/fdnToolbox](https://github.com/SebastianJiroSchlecht/fdnToolbox)
+- [github.com/Signalsmith-Audio/reverb-example-code](https://github.com/Signalsmith-Audio/reverb-example-code)
+- [github.com/libaudioverse/libaudioverse](https://github.com/libaudioverse/libaudioverse)
+- [github.com/deermichel/reverb](https://github.com/deermichel/reverb)
+
+### Overlay-Add Method Convolution
+
+```py
+import numpy as np
+
+def zerolatency_convolution(signal, impulse_response, frame_size, hop_size):
+    """
+    Applies zero latency convolution to the input signal using the OLA method
+
+    Parameters:
+    signal (1d array): The input signal
+    impulse_response (1d array): The impulse response to convolve with
+    frame_size (int): The size of the frames to use for the OLA method
+    hop_size (int): The number of samples to advance the frame for each iteration
+
+    Returns:
+    output (1d array): The convolved signal
+    """
+    # Number of samples in the input signal
+    num_samples = len(signal)
+
+    # Number of frames needed
+    num_frames = int(np.ceil(num_samples / hop_size))
+
+    # Zero pad the input signal to ensure the final frame is fully contained
+    signal = np.pad(signal, (0, num_frames * hop_size + frame_size - num_samples), 'constant')
+
+    # Initialize the output signal
+    output = np.zeros(num_samples + len(impulse_response) - 1)
+
+    # Iterate over the frames
+    for i in range(num_frames):
+        start = i * hop_size
+        end = start + frame_size
+        frame = signal[start:end]
+
+        # Convolve the frame with the impulse response
+        frame_output = np.convolve(frame, impulse_response)
+
+        # Overlap and add the frame output to the output signal
+        output[start:end] += frame_output[:frame_size]
+    return output
+```
+
+This example uses the numpy's built-in convolution function. The input signal is zero-padded to ensure that the final frame is fully contained and then the input signal is split into overlapping frames of the specified size.
+
+### Non-Uniform Partitioned Convolution
+
+Non-uniform partitioned convolution (NUPCONV) is an algorithm designed to achieve zero-latency convolution, which is the ability to apply a convolution operation to an audio signal in real-time without introducing any delay in the output.
+
+The basic idea behind NUPCONV is to partition both the impulse response and the input audio signal into small segments, and then convolve these segments in parallel. In this way, a fixed amount of audio data can be processed in each time step, and the output can be produced as soon as it becomes available, without having to wait for the entire audio buffer to be processed.
+
+The algorithm first splits the impulse response into smaller overlapping partitions, then the input audio is split into non-overlapping segments and convolved with each of the partitions in parallel. After the convolutions are completed, the resulting segments are then overlap-added to produce the final output signal.
+
+The main advantage of NUPCONV is that it avoids the latency of traditional convolution methods, which can lead to a delay in the output signal. It has been used in real-time audio processing systems and other applications where low-latency is important.
+
+It's worth noting that implementing NUPCONV can be computationally expensive and it requires more memory and processing power than traditional convolution methods. Therefore, it might not be suitable in cases where computational resources are limited.
+
+```py
+import numpy as np
+
+def nupconv(signal, impulse_response, partition_size):
+    """
+    Applies non-uniform partitioned convolution to the input signal
+
+    Parameters:
+    signal (1d array): The input signal
+    impulse_response (1d array): The impulse response to convolve with
+    partition_size (int): The size of the partitions to use for NUPCONV
+
+    Returns:
+    output (1d array): The convolved signal
+    """
+    # Number of samples in the input signal
+    num_samples = len(signal)
+    # Number of samples in the impulse response
+    num_ir_samples = len(impulse_response)
+    # Number of partitions needed
+    num_partitions = (num_ir_samples + partition_size - 1) // partition_size
+    # Zero pad the impulse response to ensure all partitions are fully contained
+    ir_padded = np.pad(impulse_response, (0, (num_partitions * partition_size) - num_ir_samples), 'constant')
+    # Initialize the output signal
+    output = np.zeros(num_samples + num_ir_samples - 1)
+    # Iterate over the partitions
+    for i in range(num_partitions):
+        start = i * partition_size
+        end = start + partition_size
+        partition = ir_padded[start:end]
+        # Iterate over the segments of the input signal
+        for j in range(0, num_samples, partition_size):
+            segment = signal[j:j+partition_size]
+            # convolve the partition with the segment
+            segment_output = np.convolve(partition, segment)
+            # overlap and add the output to the final output
+            output[j:j+len(segment_output)] += segment_output
+
+    return output
+```
+
+In this example, the impulse response is partitioned into overlapping segments of a fixed size and the input audio is split into non-overlapping segments of the same size. Then it convolves each partition with the corresponding non-overlapping segment and the resulting segments are overlap-added to produce the final output signal.
+
+
+### Acoustic Raytracing
+
+It is possible to generate a reverb audio effect based on ray-tracing of sound-rays in a 3D modeled room, a technique called "ray tracing for auralization" also known as Acoustic Raytracing, which simulates the propagation of sound through a virtual environment. This approach takes into account the reflections, transmission and diffraction of sound waves in a 3D modeled environment.
+
+However, it's worth noting that the approach has some limitation. In order to get the most accurate results, you would need to model the environment in great detail, including the materials that make up the walls, floor, and ceiling, as well as any other objects that might be in the room. Additionally, you would need to account for the absorption and scattering properties of each material, which can be computationally expensive.
+
+Regarding the low frequencies, they normally don't have a direction. In a 3D modeled room, the low frequencies behavior can be captured using a different approach such as using a modal analysis. The modal analysis is a technique used to identify the resonant frequencies (or modes) of a room and can be used to simulate the reverberant decay of low-frequency sound in a room. This approach typically involves simulating the standing waves that occur within a room, and are usually less dependent on the detailed geometric and material properties of the room.
+
+It's worth noting that both of these techniques are advanced and have their own set of limitations and difficulties. Additionally, the choice of technique and complexity of the modeled environment will depend on the intended application and the desired level of realism.
+
+In acoustic raytracing, absorption and scattering parameters are used to model the way that sound waves interact with the surfaces of objects in the environment. These parameters are determined by the properties of the materials that make up the surfaces of the objects in the environment.
+
+Absorption describes how much of the sound energy is absorbed by a surface when it strikes it. It is typically represented by an absorption coefficient, which is a dimensionless value between 0 and 1. An absorption coefficient of 0 indicates that the surface is completely reflective (i.e., does not absorb any sound), while an absorption coefficient of 1 indicates that the surface is completely absorptive (i.e., absorbs all the sound that strikes it). Most common materials absorb some sound and have absorption coefficients between 0 and 1.
+
+Scattering describes how much of the sound energy is scattered by a surface when it strikes it. Like absorption, scattering is also typically represented by a coefficient between 0 and 1. A scattering coefficient of 0 indicates that the surface is completely smooth and specular (i.e., it scatters very little sound), while a scattering coefficient of 1 indicates that the surface is completely rough and diffuse (i.e., it scatters a lot of sound).
+
+In a ray-tracing algorithm, the absorption and scattering parameters are used to determine the amplitude of the sound that is reflected, transmitted, or diffracted at each surface encountered by a sound ray. The absorption and scattering coefficients of the surfaces in the environment are often taken from measurements or from known properties of common building materials.
+
+It's worth noting that these parameters are not constant and depend on the frequency of the sound wave and can change the reverberation's characteristics, creating a more realistic simulation of the sound behavior in a room. Additionally, when the frequency is low enough, the wavelength becomes comparable with the dimensions of the room and the sound is not longer directional making the simulation more difficult.
+
+To get started with acoustic raytracing in python, you will need to have a good understanding of the following math concepts:
+
+- Trigonometry: trigonometric functions such as sine, cosine, and tangent will be used to calculate angles and angles of incidence, which are important in determining the reflections, transmissions, and diffractions of sound waves.
+- Calculus: You will need to know basic calculus concepts such as derivatives, integrals and partial derivatives, to solve the mathematical equations that describe the propagation of sound waves through a 3D environment, which are typically expressed in the form of differential equations.
+- Linear Algebra: Linear algebra concepts such as vector and matrix operations will be used to model the position, direction, and amplitude of sound rays, as well as the transformation of sound waves between different coordinate systems.
+- Geometry: basic geometry concepts such as planes and intersections of planes, will be used to determine the positions and orientations of surfaces in the environment, and to calculate the reflections, transmissions, and diffractions of sound waves at these surfaces.
+- Numerical Methods: You will likely need to use numerical methods, such as numerical integration and/or differential equations solvers, to solve the mathematical equations that describe the propagation of sound through the environment.
+
+Regarding python, you will need a good understanding of programming concepts and some good libraries such as NumPy, SciPy, and Matplotlib that will help you with the mathematical operations required. Additionally, you might find useful using some other libraries such as PyOpenCL or CUDA to accelerate some of the numerical calculations.
+
+It's worth noting that, Acoustic Raytracing is an advanced field, and creating an efficient, accurate and robust raytracing algorithm requires significant amount of computational resources, math skills, and programming experience. It may take a significant amount of time and effort to get started and to achieve realistic results.
+
+
+## Analysis
+
+### Onset Detection
+
+Onset detection is the process of identifying the start time of a sound or musical event in an audio signal. It's a fundamental task in many audio processing applications, such as music information retrieval, audio segmentation, and feature extraction.
+
+There are several approaches to onset detection, each with their own advantages and disadvantages. Here are a few common techniques that you may consider:
+
+- **Energy-based onset detection:** This approach is based on the idea that an onset is characterized by an increase in the overall energy of a signal. The most common way to implement this is to compute the short-time energy of the signal, and then look for local maxima above a certain threshold, or calculate the temporal derivative of the energy and look for peaks above a certain threshold.
+- **Spectral-based onset detection:** This approach is based on the idea that an onset is characterized by a sudden change in the frequency content of a signal. One popular method in this category is the complex domain method, which is based on the instantaneous frequency and phase of the signal, it consist of computing the short-term Fourier transform of the signal and then taking the magnitude and the phase of the resulting spectrum.
+- **Hybrid onset detection:** This approach combines the energy and spectral information by using both techniques above, and then combining their results using a certain strategy.
+- **Machine Learning Based Onset Detection:** This approach uses machine learning techniques to automatically learn the features that are characteristic of onsets. Common techniques are using supervised techniques like Random Forest, Neural Network and Decision Trees and unsupervised techniques like Clustering algorithms.
+
+You can start with one of these approaches and modify it to your specific use case. Once you have a basic algorithm working, you can then optimize it and try different parameters, feature extractions, and combinations of features to improve its performance.
+
+It is also common to evaluate the performance of onset detection algorithms using metrics such as precision, recall, and F1 score, and comparing it with other algorithms in the literature or with a dataset of annotated audio files.
+
+It's worth noting that onset detection can be a challenging task, especially when the audio signals have a high degree of variability, such as in polyphonic music, or when the signals are noisy or have a high degree of overlapping.
+
+```py
+import numpy as np
+
+def energy_onset_detection(signal, sr, frame_size=2048, hop_size=512, threshold=0.5):
+    """
+    Energy-based onset detection
+
+    Parameters:
+    signal (1d array): the audio signal
+    sr (int): the sample rate of the signal
+    frame_size (int, optional): the window size in samples
+    hop_size (int, optional): the hop size between consecutive frames
+    threshold (float, optional): the threshold for detecting an onset
+
+    Returns:
+    onsets (1d array): the onset times in seconds
+    """
+    # Compute the short-term energy
+    frames = np.array([signal[i:i+frame_size] for i in range(0, len(signal)-frame_size, hop_size)])
+    energy = np.sum(frames ** 2, axis=1)
+
+    # Find the onsets
+    onsets = []
+    for i in range(1, len(energy)):
+        if energy[i] > threshold * energy[i-1]:
+            onsets.append(i * hop_size / sr)
+
+    return onsets
+```
+
+In this example, the signal is first divided into frames using the specified frame size and hop size. The energy of each frame is computed as the sum of the squares of the samples. Next, the algorithm looks for frames where the energy is above a certain threshold (threshold) compared to the previous frame. The sample indices of these frames are then converted to seconds using the sample rate sr, and returned as the onset times.
+
+You can adjust the frame size and hop size depending on the desired time resolution and frequency resolution of the algorithm. The threshold parameter can also be tuned to better suit the audio material. It's often useful to try different values and see how the algorithm performs.
+It's also worth noting that this is a simple example, there are many more advanced methods for energy-based onset detection, which typically combine multiple features, such as the derivate of energy, the zero crossing rate, or the spectral contrast.
+
+#### Spectral Contrast
+
+Spectral contrast is a feature that aims to capture the relative changes in the amplitude of different frequency components of an audio signal. It is often used in music information retrieval and audio analysis tasks, such as onset detection, segmentation, and instrument recognition.
+
+Spectral contrast typically consists of several steps:
+
+1. The audio signal is divided into overlapping frames
+2. The power spectrum of each frame is computed (commonly with a FFT)
+3. A spectral contrast function is applied to the power spectrum to extract the spectral contrast feature.
+
+There are different ways to compute the spectral contrast, but most methods involve the following steps:
+
+- Computing the mean power of the signal in different frequency bands
+- Computing the deviation from the mean power in each frequency band
+- Normalizing the deviation by the mean power of the signal
+
+One common method for computing the spectral contrast is based on the following equation:
+
+```py
+spectral_contrast = (S_f - M_f) / M_f
+```
+
+Where `S_f` is the power spectrum of a frame, `M_f` is the mean power spectrum of all frames, and the division is element-wise.
+
+The resulting spectral contrast feature is a measure of the relative changes in the amplitude of different frequency components of the audio signal. These relative changes are often related to the presence of a musical event or onset, and thus spectral contrast can be used as a feature for onset detection or other similar tasks.
+
+In practice, It's often useful to compute the spectral contrast over several frequency bands, to give more detailed information about the different frequency components in the signal and to make the feature more robust to changes in overall loudness. It can also be useful to apply various windowing techniques, such as Hanning, Blackman, and Kaiser, to improve the spectral resolution.
+
+#### Testing
+
+Sure, precision, recall, and the F1 score are metrics that are commonly used to evaluate the performance of a binary classification task, such as onset detection.
+
+- **Precision** is the proportion of true positive detections (correctly detected onsets) out of all positive detections (all detections that the algorithm has made). It is a measure of the algorithm's ability to avoid false positives (detecting an onset when there is none).
+- **Recall** is the proportion of true positive detections out of all actual onsets. It measures the ability of the algorithm to detect all the actual onsets.
+- **F1 Score** is the harmonic mean of precision and recall. It balances the trade-off between precision and recall and it is a good overall measure of the performance of the algorithm
+
+In onset detection, precision can be understood as how many onsets the algorithm identified are truly onsets, while recall is how many of the onsets in the audio were detected by the algorithm.
+
+F1-score is a commonly used measure, because it takes into account the balance of precision and recall, and it gives good indicator of the performance of the algorithm. It is a way to combine precision and recall into a single metric, and it reaches its best value at 1 (perfect precision and recall) and worst at 0.
+
+It's worth noting that these measures are based on the assumption that the audio file is already labeled with ground-truth onsets and thus, you can compare the detections of the algorithm against this ground-truth to evaluate the performance.
+
+It's also worth noting that there are other ways to evaluate onset detection algorithms as well, such as information retrieval metrics like mean reciprocal rank and precision at n, which can provide more detailed information about the performance of the algorithm for different use cases.
+
+```py
+import numpy as np
+
+def f1_score(detected_onsets, true_onsets):
+    """
+    Compute the F1 score for an onset detection algorithm
+
+    Parameters:
+    detected_onsets (1d array): the onset times detected by the algorithm
+    true_onsets (1d array): the true onset times
+
+    Returns:
+    f1 (float): the F1 score
+    """
+    detected_onsets = np.array(detected_onsets)
+    true_onsets = np.array(true_onsets)
+
+    # Find true positives (correct detections)
+    true_positives = np.intersect1d(detected_onsets, true_onsets, assume_unique=True, return_indices=False)
+    tp = len(true_positives)
+
+    # Find false positives (detected onsets that are not true onsets)
+    false_positives = np.setdiff1d(detected_onsets, true_onsets, assume_unique=True)
+    fp = len(false_positives)
+
+    # Find false negatives (true onsets that are not detected)
+    false_negatives = np.setdiff1d(true_onsets, detected_onsets, assume_unique=True)
+    fn = len(false_negatives)
+
+    # Calculate precision and recall
+    precision = tp / (tp + fp)
+    recall = tp / (tp + fn)
+
+    # Calculate F1 score
+    f1 = 2 * (precision * recall) / (precision + recall)
+
+    return f1
+
+def f1_score_with_tolerance(detected_onsets, true_onsets, tolerance=0.1):
+    """
+    Compute the F1 score for an onset detection algorithm
+
+    Parameters:
+    detected_onsets (1d array): the onset times detected by the algorithm
+    true_onsets (1d array): the true onset times
+    tolerance (float, optional): the tolerance for considering a detection as a true positive in seconds
+
+    Returns:
+    f1 (float): the F1 score
+    """
+    tp = 0
+    fp = 0
+    fn = 0
+    for onset in true_onsets:
+        match = [i for i in detected_onsets if abs(i-onset) <= tolerance]
+        if len(match) > 0:
+            tp += 1
+        else:
+            fn += 1
+
+    for onset in detected_onsets:
+        match = [i for i in true_onsets if abs(i-onset) <= tolerance]
+        if len(match) == 0:
+            fp += 1
+
+    precision = tp / (tp + fp)
+    recall = tp / (tp + fn)
+    f1 = 2 * (precision * recall) / (precision + recall)
+    return f1
+```
+
+In this example, the `f1_score` function takes in the detected onset times `detected_onsets` and the true onset times `true_onsets` as inputs, along with an optional `tolerance` value tolerance. The function uses numpy's `intersect1d` to find the true positives (onsets that were correctly detected by the algorithm) and `setdiff1d` to find the false positives (onsets that were detected by the algorithm but are not true onsets) and false negatives (true onsets that were not detected). It then calculates precision, recall and the F1 score using the formula given above.
+
+It's worth noting that in the example above the tolerance argument is used to define the window of time that a true onset can be detected and still be considered a true positive. The tolerance argument allows for some small deviation in the onset detection. The tolerance can be adjusted depending on the characteristics of the audio material and the specific use case.
+
+It's also worth noting that these metrics can be evaluated on different sections of the audio, such as on each individual track or for different type of instruments. In addition, for some cases, instead of using a set tolerance for all onsets, tolerance can be adaptive, based on the specific characteristics of the audio signal.
