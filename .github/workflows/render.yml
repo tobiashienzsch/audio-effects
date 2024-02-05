@@ -32,7 +32,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Perceptual-Convolution
+          name: Audio-Effects
           path: _book
           if-no-files-found: error
           retention-days: 7
