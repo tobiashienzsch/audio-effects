@@ -13,7 +13,7 @@
 
 ```{python}
 #| echo: false
-from IPython.display import display, Math, Latex
+from IPython.display import display, display_latex, Math, Latex
 import sympy
 
 sympy.init_printing(latex_mode='equation*', wrap_line=False)
@@ -38,17 +38,17 @@ AD2 = sympy.integrate(AD1, x)
 
 ```{python}
 #| echo: false
-Math(sympy.latex(f))
+display_latex(f"$${sympy.latex(f)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-Math(sympy.latex(AD1))
+display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-Math(sympy.latex(AD2))
+display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```
 
 
@@ -69,17 +69,17 @@ AD2 = sympy.integrate(AD1, x)
 
 ```{python}
 #| echo: false
-Math(sympy.latex(f))
+display_latex(f"$${sympy.latex(f)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-Math(sympy.latex(AD1))
+display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-Math(sympy.latex(AD2))
+display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```
 
 
@@ -98,17 +98,17 @@ AD2 = sympy.integrate(AD1, x)
 
 ```{python}
 #| echo: false
-Math(sympy.latex(f))
+display_latex(f"$${sympy.latex(f)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-Math(sympy.latex(AD1))
+display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-Math(sympy.latex(AD2))
+display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```
 
 
@@ -123,17 +123,17 @@ AD2 = sympy.integrate(AD1, x)
 
 ```{python}
 #| echo: false
-Math(sympy.latex(f))
+display_latex(f"$${sympy.latex(f)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-Math(sympy.latex(AD1))
+display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-Math(sympy.latex(AD2))
+display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```
 
 
@@ -149,17 +149,17 @@ AD2 = sympy.integrate(AD1, x)
 
 ```{python}
 #| echo: false
-Math(sympy.latex(f))
+display_latex(f"$${sympy.latex(f)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-Math(sympy.latex(AD1))
+display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-Math(sympy.latex(AD2))
+display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```
 
 ### Overdrive
@@ -178,17 +178,17 @@ AD2 = sympy.integrate(AD1, x)
 
 ```{python}
 #| echo: false
-Math(sympy.latex(f))
+display_latex(f"$${sympy.latex(f)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-Math(sympy.latex(AD1))
+display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-Math(sympy.latex(AD2))
+display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```
 
 ### Full Wave Rectifier
@@ -203,17 +203,17 @@ AD2 = sympy.integrate(AD1, x)
 
 ```{python}
 #| echo: false
-Math(sympy.latex(f))
+display_latex(f"$${sympy.latex(f)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-Math(sympy.latex(AD1))
+display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-Math(sympy.latex(AD2))
+display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```
 
 ### Half Wave Rectifier
@@ -228,15 +228,15 @@ AD2 = sympy.integrate(AD1, x)
 
 ```{python}
 #| echo: false
-Math(sympy.latex(f))
+display_latex(f"$${sympy.latex(f)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-Math(sympy.latex(AD1))
+display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-Math(sympy.latex(AD2))
+display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```
