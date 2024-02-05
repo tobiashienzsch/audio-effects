@@ -1,0 +1,197 @@
+# Frequency
+
+## Phaser
+
+```py
+import numpy as np
+
+def phaser(audio, depth=0.5, rate=1.0, feedback=0.5, mix=0.5):
+  # Create a buffer to store the modulated signal
+  buffer = np.zeros(len(audio))
+
+  # Create a phase modulation oscillator
+  phase_mod = np.zeros(len(audio))
+  for i in range(1, len(audio)):
+    phase_mod[i] = phase_mod[i-1] + rate / 44100  # update phase
+  phase_mod = np.sin(2 * np.pi * phase_mod)  # generate phase modulation
+
+  # Create a series of all-pass filters
+  num_filters = 8
+  filters = [np.zeros(len(audio)) for _ in range(num_filters)]
+  for i in range(1, len(audio)):
+    # Update the coefficients of the all-pass filters
+    coeff = np.exp(-2 * np.pi * depth * phase_mod[i] / num_filters)
+    for j in range(num_filters):
+      filters[j][i] = coeff * (filters[j][i-1] + audio[i] - feedback * filters[j][i-1]) + audio[i] - coeff * filters[j][i-1]
+    # Combine the output of the all-pass filters
+    buffer[i] = sum(filters[j][i] for j in range(num_filters))
+
+  # Mix the original audio with the modulated signal
+  audio = mix * audio + (1 - mix) * buffer
+
+  return audio
+```
+
+```py
+class Phaser:
+    def __init__(self, sample_rate, num_filters, base_frequency, frequency_spread):
+        self.sample_rate = sample_rate
+        self.allpass_filters = []
+        self.num_filters = num_filters
+        self.base_frequency = base_frequency
+        self.frequency_spread = frequency_spread
+        self.initialize_filters()
+
+    def initialize_filters(self):
+        for i in range(self.num_filters):
+            frequency = self.base_frequency + i * self.frequency_spread
+            allpass_filter = AllpassFilter(frequency, self.sample_rate)
+            self.allpass_filters.append(allpass_filter)
+
+    def process(self, audio):
+        output = np.zeros(len(audio))
+        for i in range(self.num_filters):
+            allpass_output = self.allpass_filters[i].process(audio)
+            output += allpass_output
+        return output
+```
+
+The `Phaser` class takes in a sample rate, number of filters, base frequency and frequency spread, it creates an array of all-pass filters, each with a slightly different cutoff frequency. The `initialize_filters` method is used to create the all-pass filters with the given parameters, the `process` method applies each filter to the audio signal in parallel, sums up the output of each filter and returns the final output.
+
+The `base_frequency` parameter determines the center frequency of the phaser effect, and the `frequency_spread` parameter determines the range of frequencies that will be affected by the phaser effect. With a higher frequency spread, the phaser effect will affect a wider range of frequencies. Using `num_filters` will decide the number of all-pass filter that would be used to create the phaser effect. You can experiment with different values for these parameters to achieve the desired phaser effect.
+
+It's worth noting that a Phaser effect can be implemented in many other ways, for example, by using modulated filters, or by applying different frequency modulations and you can also experiment with different types of all-pass filter.
+
+The values for the `base_frequency` and `frequency_spread` parameters will depend on the specific sound you are trying to achieve with the phaser effect and the audio material you are processing. In general, the base frequency should be in the range of around 500 Hz to 1500 Hz and the frequency spread should be in the range of around 50 Hz to 200 Hz.
+
+For a more subtle phaser effect, a lower base frequency of around 500 Hz and a lower frequency spread of around 50 Hz might be appropriate. This will create a phaser effect that affects mostly low-mid frequencies and has a more subtle and smooth character.
+
+For a more pronounced phaser effect, a higher base frequency of around 1500 Hz and a higher frequency spread of around 200 Hz might be appropriate. This will create a phaser effect that affects mostly high-mid frequencies and has a more pronounced and dramatic character.
+
+It's worth noting that you should always listen to the effect and adjust these parameters according to the specific audio material you're processing and the desired effect.
+Also, it's worth noticing that different audio material will respond differently to these parameter so it's better to experiment and adjust them accordingly.
+
+To modulate the cutoff frequency of the all-pass filters in the phaser effect, you can use a modulating signal such as a low-frequency oscillator (LFO) to create a time-varying cutoff frequency.
+
+Here's an example of how you could modify the Phaser class to include an LFO and modulate the cutoff frequency of the all-pass filters with it:
+
+```py
+class Phaser:
+    def __init__(self, sample_rate, num_filters, base_frequency, frequency_spread, lfo_frequency):
+        self.sample_rate = sample_rate
+        self.allpass_filters = []
+        self.num_filters = num_filters
+        self.base_frequency = base_frequency
+        self.frequency_spread = frequency_spread
+        self.lfo_frequency = lfo_frequency
+        self.initialize_filters()
+        self.phase = 0
+
+    def initialize_filters(self):
+        for i in range(self.num_filters):
+            frequency = self.base_frequency + i * self.frequency_spread
+            allpass_filter = AllpassFilter(frequency, self.sample_rate)
+            self.allpass_filters.append(allpass_filter)
+
+    def process(self, audio):
+        output = np.zeros(len(audio))
+        for i in range(len(audio)):
+            # Generate the LFO value for this sample
+            lfo_value = np.sin(2 * np.pi * self.lfo_frequency * i / self.sample_rate + self.phase)
+
+            # Update the cutoff frequency for each all-pass filter
+            for j in range(self.num_filters):
+                cutoff_frequency = self.base_frequency + j * self.frequency_spread + lfo_value * self.frequency_spread
+                self.allpass_filters[j].cutoff_frequency = cutoff_frequency
+
+            # Process the audio through the all-pass filters
+            allpass_output = np.zeros(len(audio))
+            for j in range(self.num_filters):
+                allpass_output += self.allpass_filters[j].process(audio[i])
+
+            # Add the output to the final output buffer
+            output[i] = allpass_output
+
+        # Store the current phase for next block processing
+        self.phase = 2 * np.pi * self.lfo_frequency * len(audio) / self.sample_rate + self.phase
+        return output
+```
+
+## Sub-Harmonic Generator
+
+A sub-harmonic generator is a type of audio effect that is used to generate new frequencies that are lower than the original frequencies in the audio signal. It is often used to add depth and power to bass instruments, such as bass guitar and synthesizers, and it can be used in a variety of applications, including music production, sound design, and film and television post-production.
+
+Here is an example of how a sub-harmonic generator could be implemented in Python using the NumPy library:
+
+```py
+import numpy as np
+
+def subharmonic_generator(audio, order=1, gain=1.0):
+  # Create a buffer to store the output signal
+  output = np.zeros(len(audio))
+
+  # Generate the sub-harmonics
+  for i in range(len(audio)):
+    # Determine the sub-harmonic frequency
+    subharmonic_freq = i * (1.0 / order)
+
+    # Interpolate the input signal at the sub-harmonic frequency
+    interpolated_value = np.interp(subharmonic_freq, np.arange(len(audio)), audio)
+
+    # Add the interpolated value to the output signal
+    output[i] += gain * interpolated_value
+
+  return output
+
+```
+
+This function takes an audio signal as input, as well as two parameters that control the order of the sub-harmonics (i.e. the number of octaves below the original frequency) and the gain of the sub-harmonics. It generates the sub-harmonics by interpolating the input signal at the desired sub-harmonic frequencies and adding the interpolated values to the output signal. The specific implementation and parameters of the effect will depend on the desired behavior and characteristics of the effect.
+
+A more sophisticated implementation of a sub-harmonic generator might include the following features:
+
+- Multiple sub-harmonic orders: The ability to generate sub-harmonics at multiple octaves below the original frequencies, with separate controls for the gain of each order.
+- Filter control: The ability to shape the frequency response of the sub-harmonics using filters, such as low-pass, high-pass, or band-pass filters. This can be used to shape the timbre of the sub-harmonics and to eliminate unwanted frequencies.
+- Envelope follower: The ability to control the gain of the sub-harmonics using an envelope follower, which tracks the envelope of the input signal and adjusts the gain of the sub-harmonics in response. This can be used to create more dynamic and expressive sub-harmonic effects.
+- Mix control: The ability to control the balance between the original audio and the sub-harmonics using a mix control. This can be used to blend the sub-harmonics with the original signal in a natural way.
+
+Here is an example of how a more sophisticated sub-harmonic generator could be implemented in Python using the NumPy library:
+
+```py
+import numpy as np
+
+def subharmonic_generator(audio, orders=[1], gains=[1.0], filters=[None], envelope_follow=False, mix=1.0):
+  # Create a buffer to store the output signal
+  output = np.zeros(len(audio))
+
+  # Create the envelope follower
+  envelope = np.zeros(len(audio))
+  if envelope_follow:
+    envelope[0] = np.abs(audio[0])
+    for i in range(1, len(audio)):
+      envelope[i] = 0.9 * envelope[i-1] + 0.1 * np.abs(audio[i])
+
+  # Generate the sub-harmonics
+  for i in range(len(audio)):
+    for order, gain in zip(orders, gains):
+      # Determine the sub-harmonic frequency
+      subharmonic_freq = i * (1.0 / order)
+
+      # Interpolate the input signal at the sub-harmonic frequency
+      interpolated_value = np.interp(subharmonic_freq, np.arange(len(audio)), audio)
+
+      # Apply the filter, if specified
+      if filters[order-1] is not None:
+        interpolated_value = np.convolve(interpolated_value, filters[order-1], mode='same')
+
+      # Apply the envelope follower, if enabled
+      if envelope_follow:
+        interpolated_value *= envelope[i]
+
+      # Add the interpolated value to the output signal
+      output[i] += gain * interpolated_value
+
+  # Mix the original audio with the sub-harmonics
+  audio = mix * audio + (1 - mix) * output
+
+  return audio
+```

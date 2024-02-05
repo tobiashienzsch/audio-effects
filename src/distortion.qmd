@@ -1,0 +1,242 @@
+# Distortion
+
+- <http://www.dangelo.audio/#research>
+
+## ADAA
+
+- <https://ccrma.stanford.edu/~jatin/Notebooks/adaa.html>
+- <https://github.com/jatinchowdhury18/ADAA>
+- <https://github.com/jatinchowdhury18/audio_dspy/blob/master/audio_dspy/nonlinearities.py>
+- [ARBITRARY-ORDER IIR ANTIDERIVATIVE ANTIALIASING](https://www.dafx.de/paper-archive/2021/proceedings/papers/DAFx20in21_paper_27.pdf)
+
+## Nonlinearities
+
+```{python}
+#| echo: false
+from IPython.display import display, Math, Latex
+import sympy
+
+sympy.init_printing(latex_mode='equation*', wrap_line=False)
+
+x = sympy.Symbol('x', real=True)
+```
+
+
+### Soft-Clipper (3rd Degree)
+
+```{python}
+#| echo: false
+degree = 3
+one_over_degree = sympy.Rational(1, degree)
+norm_factor = sympy.Rational(degree - 1, degree)
+inv_norm = sympy.Rational(1, norm_factor)
+y = x * norm_factor
+f = (y - (y**degree) * one_over_degree)*inv_norm
+AD1 = sympy.integrate(f, x)
+AD2 = sympy.integrate(AD1, x)
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(f))
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(AD1))
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(AD2))
+```
+
+
+
+### Soft-Clipper (5rd Degree)
+
+```{python}
+#| echo: false
+degree = 5
+one_over_degree = sympy.Rational(1, degree)
+norm_factor = sympy.Rational(degree - 1, degree)
+inv_norm = sympy.Rational(1, norm_factor)
+y = x * norm_factor
+f = (y - (y**degree) * one_over_degree)*inv_norm
+AD1 = sympy.integrate(f, x)
+AD2 = sympy.integrate(AD1, x)
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(f))
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(AD1))
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(AD2))
+```
+
+
+### Hard-Clipper
+
+```{python}
+#| echo: false
+f = sympy.Piecewise(
+    (-1 , sympy.Le(x, -1)),
+    (1 , sympy.Ge(x, 1)),
+    (x, True),
+)
+AD1 = sympy.integrate(f, x)
+AD2 = sympy.integrate(AD1, x)
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(f))
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(AD1))
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(AD2))
+```
+
+
+### Tanh-Clipper
+
+```{python}
+#| echo: false
+f = sympy.tanh(x)
+AD1 = sympy.integrate(f, x)
+AD2 = sympy.integrate(AD1, x)
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(f))
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(AD1))
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(AD2))
+```
+
+
+
+### Sine-Clipper
+
+```{python}
+#| echo: false
+f = -sympy.sin(sympy.pi*0.5*x)
+AD1 = sympy.integrate(f, x)
+AD2 = sympy.integrate(AD1, x)
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(f))
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(AD1))
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(AD2))
+```
+
+### Overdrive
+
+
+```{python}
+#| echo: false
+f = sympy.Piecewise(
+    (sympy.sign(x)*2*x, sympy.And(sympy.Ge(x, 0) , sympy.Le(x, sympy.Rational(1,3)))),
+    ((3-(2-3*x)**2) / 3, sympy.Gt(x, sympy.Rational(1,3)) & sympy.Le(x, sympy.Rational(2,3))),
+    (1, True)
+)
+AD1 = sympy.integrate(f, x)
+AD2 = sympy.integrate(AD1, x)
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(f))
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(AD1))
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(AD2))
+```
+
+### Full Wave Rectifier
+
+
+```{python}
+#| echo: false
+f = sympy.Abs(x)
+AD1 = sympy.integrate(f, x)
+AD2 = sympy.integrate(AD1, x)
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(f))
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(AD1))
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(AD2))
+```
+
+### Half Wave Rectifier
+
+
+```{python}
+#| echo: false
+f = sympy.Piecewise((x, sympy.Gt(x, 0)), (sympy.Abs(x), True))
+AD1 = sympy.integrate(f, x)
+AD2 = sympy.integrate(AD1, x)
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(f))
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(AD1))
+```
+
+```{python}
+#| echo: false
+Math(sympy.latex(AD2))
+```

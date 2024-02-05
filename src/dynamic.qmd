@@ -1,0 +1,44 @@
+# Dynamic
+
+## Compressor
+
+## Expander
+
+## Limiter
+
+## Transient Shaper
+
+An audio transient shaper is a type of audio effect that is used to modify the transient (attack and decay) characteristics of an audio signal. Transient shaping is often used to alter the perceived punch, clarity, and energy of a sound, and it can be applied to a wide range of audio material, including drums, percussion, bass, and vocals.
+
+There are a number of different approaches that can be used to implement an audio transient shaper effect, but one common method is to use a compressor or envelope follower to detect the transients in the audio signal, and then apply gain modification to the transients based on a user-specified curve.
+
+Here is an example of how an audio transient shaper effect could be implemented in Python using the NumPy library:
+
+```py
+import numpy as np
+
+def transient_shaper(audio, curve, threshold=0.1, ratio=2.0, attack=5, release=50):
+  # Create an envelope follower using a compressor
+  envelope = np.zeros(len(audio))
+  for i in range(1, len(audio)):
+    if abs(audio[i]) > envelope[i-1]:
+      envelope[i] = attack * (abs(audio[i]) - envelope[i-1]) + envelope[i-1]
+    else:
+      envelope[i] = release * (abs(audio[i]) - envelope[i-1]) + envelope[i-1]
+
+  # Apply gain modification to the transients based on the curve
+  for i in range(len(audio)):
+    if envelope[i] > threshold:
+      audio[i] *= curve[int(envelope[i] * len(curve))]
+
+  return audio
+
+# Example usage: apply a transient shaper curve to an audio signal
+audio = np.random.random(44100)  # generate a random audio signal
+curve = np.linspace(0, 2, 100)  # create a linear transient shaper curve
+audio = transient_shaper(audio, curve)  # apply the transient shaper to the audio
+```
+
+This example defines a function transient_shaper that takes an audio signal and a transient shaper curve as inputs, and applies gain modification to the transients in the signal based on the curve. The function first uses a compressor to detect the transients in the signal, and then applies gain modification to the transients based on the curve. The curve can be specified by the user and can take any form, such as a linear curve or a more complex curve with multiple segments.
+
+Keep in mind that this is just one way to implement an audio transient shaper effect, and there are other approaches that may be more suitable for different applications. The specific implementation will depend on the desired behavior and characteristics of the effect.

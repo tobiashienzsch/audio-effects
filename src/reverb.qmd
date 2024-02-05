@@ -1,0 +1,173 @@
+# Reverb
+
+## Schroeder Reverberation
+
+Schroeder reverberation is a simple algorithm that simulates the reverberation of sound by summing several delayed and attenuated versions of the input audio, each with a different delay time. The algorithm is named after Manfred R. Schroeder, who first proposed the idea in the 1960s.
+
+Here is an example of how you could implement a Schroeder reverberation effect in Python:
+
+```py
+import numpy as np
+
+def schroeder_reverb(audio, delay_times, decay_times):
+    output = np.zeros(len(audio))
+
+    for i in range(len(delay_times)):
+        delay = int(delay_times[i] * 44100) # convert seconds to samples
+        decay = decay_times[i]
+        output += np.roll(audio, delay) * decay
+
+    return output
+
+# Example usage
+audio = ... # load the audio
+delay_times = [0.02, 0.03, 0.04] # in seconds
+decay_times = [0.5, 0.3, 0.2]
+output = schroeder_reverb(audio, delay_times, decay_times)
+```
+
+This example defines a function schroeder_reverb(audio, delay_times, decay_times) that takes in an audio signal, a list of delay times, and a list of decay times. The function applies several delayed and attenuated versions of the input audio, each with a different delay time, simulating the reflections of sound in a room.
+
+
+## FDN
+
+- [Feedback Delay Networks for Artificial Reverberation - Sebastian Schlecht](https://www.youtube.com/watch?v=gRiZX7C6zJo)
+- [Let's Write A Reverb](https://signalsmith-audio.co.uk/writing/2021/lets-write-a-reverb/)
+- [github.com/SebastianJiroSchlecht/fdnToolbox](https://github.com/SebastianJiroSchlecht/fdnToolbox)
+- [github.com/Signalsmith-Audio/reverb-example-code](https://github.com/Signalsmith-Audio/reverb-example-code)
+- [github.com/libaudioverse/libaudioverse](https://github.com/libaudioverse/libaudioverse)
+- [github.com/deermichel/reverb](https://github.com/deermichel/reverb)
+
+## Overlay-Add Method Convolution
+
+```py
+import numpy as np
+
+def zerolatency_convolution(signal, impulse_response, frame_size, hop_size):
+    """
+    Applies zero latency convolution to the input signal using the OLA method
+
+    Parameters:
+    signal (1d array): The input signal
+    impulse_response (1d array): The impulse response to convolve with
+    frame_size (int): The size of the frames to use for the OLA method
+    hop_size (int): The number of samples to advance the frame for each iteration
+
+    Returns:
+    output (1d array): The convolved signal
+    """
+    # Number of samples in the input signal
+    num_samples = len(signal)
+
+    # Number of frames needed
+    num_frames = int(np.ceil(num_samples / hop_size))
+
+    # Zero pad the input signal to ensure the final frame is fully contained
+    signal = np.pad(signal, (0, num_frames * hop_size + frame_size - num_samples), 'constant')
+
+    # Initialize the output signal
+    output = np.zeros(num_samples + len(impulse_response) - 1)
+
+    # Iterate over the frames
+    for i in range(num_frames):
+        start = i * hop_size
+        end = start + frame_size
+        frame = signal[start:end]
+
+        # Convolve the frame with the impulse response
+        frame_output = np.convolve(frame, impulse_response)
+
+        # Overlap and add the frame output to the output signal
+        output[start:end] += frame_output[:frame_size]
+    return output
+```
+
+This example uses the numpy's built-in convolution function. The input signal is zero-padded to ensure that the final frame is fully contained and then the input signal is split into overlapping frames of the specified size.
+
+## Non-Uniform Partitioned Convolution
+
+Non-uniform partitioned convolution (NUPCONV) is an algorithm designed to achieve zero-latency convolution, which is the ability to apply a convolution operation to an audio signal in real-time without introducing any delay in the output.
+
+The basic idea behind NUPCONV is to partition both the impulse response and the input audio signal into small segments, and then convolve these segments in parallel. In this way, a fixed amount of audio data can be processed in each time step, and the output can be produced as soon as it becomes available, without having to wait for the entire audio buffer to be processed.
+
+The algorithm first splits the impulse response into smaller overlapping partitions, then the input audio is split into non-overlapping segments and convolved with each of the partitions in parallel. After the convolutions are completed, the resulting segments are then overlap-added to produce the final output signal.
+
+The main advantage of NUPCONV is that it avoids the latency of traditional convolution methods, which can lead to a delay in the output signal. It has been used in real-time audio processing systems and other applications where low-latency is important.
+
+It's worth noting that implementing NUPCONV can be computationally expensive and it requires more memory and processing power than traditional convolution methods. Therefore, it might not be suitable in cases where computational resources are limited.
+
+```py
+import numpy as np
+
+def nupconv(signal, impulse_response, partition_size):
+    """
+    Applies non-uniform partitioned convolution to the input signal
+
+    Parameters:
+    signal (1d array): The input signal
+    impulse_response (1d array): The impulse response to convolve with
+    partition_size (int): The size of the partitions to use for NUPCONV
+
+    Returns:
+    output (1d array): The convolved signal
+    """
+    # Number of samples in the input signal
+    num_samples = len(signal)
+    # Number of samples in the impulse response
+    num_ir_samples = len(impulse_response)
+    # Number of partitions needed
+    num_partitions = (num_ir_samples + partition_size - 1) // partition_size
+    # Zero pad the impulse response to ensure all partitions are fully contained
+    ir_padded = np.pad(impulse_response, (0, (num_partitions * partition_size) - num_ir_samples), 'constant')
+    # Initialize the output signal
+    output = np.zeros(num_samples + num_ir_samples - 1)
+    # Iterate over the partitions
+    for i in range(num_partitions):
+        start = i * partition_size
+        end = start + partition_size
+        partition = ir_padded[start:end]
+        # Iterate over the segments of the input signal
+        for j in range(0, num_samples, partition_size):
+            segment = signal[j:j+partition_size]
+            # convolve the partition with the segment
+            segment_output = np.convolve(partition, segment)
+            # overlap and add the output to the final output
+            output[j:j+len(segment_output)] += segment_output
+
+    return output
+```
+
+In this example, the impulse response is partitioned into overlapping segments of a fixed size and the input audio is split into non-overlapping segments of the same size. Then it convolves each partition with the corresponding non-overlapping segment and the resulting segments are overlap-added to produce the final output signal.
+
+
+## Acoustic Raytracing
+
+It is possible to generate a reverb audio effect based on ray-tracing of sound-rays in a 3D modeled room, a technique called "ray tracing for auralization" also known as Acoustic Raytracing, which simulates the propagation of sound through a virtual environment. This approach takes into account the reflections, transmission and diffraction of sound waves in a 3D modeled environment.
+
+However, it's worth noting that the approach has some limitation. In order to get the most accurate results, you would need to model the environment in great detail, including the materials that make up the walls, floor, and ceiling, as well as any other objects that might be in the room. Additionally, you would need to account for the absorption and scattering properties of each material, which can be computationally expensive.
+
+Regarding the low frequencies, they normally don't have a direction. In a 3D modeled room, the low frequencies behavior can be captured using a different approach such as using a modal analysis. The modal analysis is a technique used to identify the resonant frequencies (or modes) of a room and can be used to simulate the reverberant decay of low-frequency sound in a room. This approach typically involves simulating the standing waves that occur within a room, and are usually less dependent on the detailed geometric and material properties of the room.
+
+It's worth noting that both of these techniques are advanced and have their own set of limitations and difficulties. Additionally, the choice of technique and complexity of the modeled environment will depend on the intended application and the desired level of realism.
+
+In acoustic raytracing, absorption and scattering parameters are used to model the way that sound waves interact with the surfaces of objects in the environment. These parameters are determined by the properties of the materials that make up the surfaces of the objects in the environment.
+
+Absorption describes how much of the sound energy is absorbed by a surface when it strikes it. It is typically represented by an absorption coefficient, which is a dimensionless value between 0 and 1. An absorption coefficient of 0 indicates that the surface is completely reflective (i.e., does not absorb any sound), while an absorption coefficient of 1 indicates that the surface is completely absorptive (i.e., absorbs all the sound that strikes it). Most common materials absorb some sound and have absorption coefficients between 0 and 1.
+
+Scattering describes how much of the sound energy is scattered by a surface when it strikes it. Like absorption, scattering is also typically represented by a coefficient between 0 and 1. A scattering coefficient of 0 indicates that the surface is completely smooth and specular (i.e., it scatters very little sound), while a scattering coefficient of 1 indicates that the surface is completely rough and diffuse (i.e., it scatters a lot of sound).
+
+In a ray-tracing algorithm, the absorption and scattering parameters are used to determine the amplitude of the sound that is reflected, transmitted, or diffracted at each surface encountered by a sound ray. The absorption and scattering coefficients of the surfaces in the environment are often taken from measurements or from known properties of common building materials.
+
+It's worth noting that these parameters are not constant and depend on the frequency of the sound wave and can change the reverberation's characteristics, creating a more realistic simulation of the sound behavior in a room. Additionally, when the frequency is low enough, the wavelength becomes comparable with the dimensions of the room and the sound is not longer directional making the simulation more difficult.
+
+To get started with acoustic raytracing in python, you will need to have a good understanding of the following math concepts:
+
+- Trigonometry: trigonometric functions such as sine, cosine, and tangent will be used to calculate angles and angles of incidence, which are important in determining the reflections, transmissions, and diffractions of sound waves.
+- Calculus: You will need to know basic calculus concepts such as derivatives, integrals and partial derivatives, to solve the mathematical equations that describe the propagation of sound waves through a 3D environment, which are typically expressed in the form of differential equations.
+- Linear Algebra: Linear algebra concepts such as vector and matrix operations will be used to model the position, direction, and amplitude of sound rays, as well as the transformation of sound waves between different coordinate systems.
+- Geometry: basic geometry concepts such as planes and intersections of planes, will be used to determine the positions and orientations of surfaces in the environment, and to calculate the reflections, transmissions, and diffractions of sound waves at these surfaces.
+- Numerical Methods: You will likely need to use numerical methods, such as numerical integration and/or differential equations solvers, to solve the mathematical equations that describe the propagation of sound through the environment.
+
+Regarding python, you will need a good understanding of programming concepts and some good libraries such as NumPy, SciPy, and Matplotlib that will help you with the mathematical operations required. Additionally, you might find useful using some other libraries such as PyOpenCL or CUDA to accelerate some of the numerical calculations.
+
+It's worth noting that, Acoustic Raytracing is an advanced field, and creating an efficient, accurate and robust raytracing algorithm requires significant amount of computational resources, math skills, and programming experience. It may take a significant amount of time and effort to get started and to achieve realistic results.

@@ -7,7 +7,16 @@ book:
   chapters:
     - index.qmd
     - src/intro.qmd
-    - src/overview.qmd
+    - src/filter.qmd
+    - src/dynamic.qmd
+    - src/distortion.qmd
+    - src/delay.qmd
+    - src/reverb.qmd
+    - src/frequency.qmd
+    - src/pitch_shift.qmd
+    - src/resample.qmd
+    - src/virtual_analog.qmd
+    - src/analysis.qmd
     - src/testing.qmd
     - src/open_source.qmd
     - src/references.qmd

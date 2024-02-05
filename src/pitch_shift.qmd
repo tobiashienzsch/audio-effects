@@ -1,0 +1,97 @@
+# Pitch Shifting
+
+The Time-domain pitch shifting method involves modifying the temporal positions of the samples, this can be done by a simple time-stretching, or using more advanced techniques such as WSOLA (Waveform Similarity-based Overlap-and-add) or TSOLA (Time-Scale Modification Using Overlap-Add) which are time-domain pitch shifting techniques that allow for smooth pitch shifting with minimal artifacts.
+
+Frequency-domain pitch shifting, on the other hand, involves modifying the frequency content of the signal. One way to do this is by using the Short-Time Fourier Transform (STFT) to convert the signal to the frequency domain, then shifting the frequencies, and finally converting the signal back to the time domain using the inverse STFT. A popular algorithm that uses this approach is the Phase Vocoder. It uses the STFT to analyze a signal in the frequency domain and provides precise control over the pitch, formants, and duration of the audio.
+
+Also, there's a technique called "Automatic Pitch Correction" which can detect the pitch of the signal and corrects it according to a desired target pitch, this can be done using pitch detection algorithms such as the YIN algorithm, and pitch shifting algorithms such as the PSOLA algorithm. The most well-known software that use this technique is the Auto-Tune.
+
+All these methods have their pros and cons and are suitable for different use cases, and also there's a trade-off between quality and computational cost.
+
+## Auto-Tune
+
+Auto-Tune is a popular audio effect that is used to automatically correct or modify the pitch of a recording to match a specific musical scale or key. It is often used to correct minor pitch variations in a performance and to create a distinctive, stylized sound.
+
+There are a few different algorithms used to implement the Auto-Tune effect, but one common approach is based on pitch detection and pitch shifting. The basic process for implementing Auto-Tune using this approach is as follows:
+
+1. Split the audio signal into overlapping frames of a short duration (usually around 10-20 milliseconds).
+2. Analyze the pitch of each frame using a pitch detection algorithm, such as an autocorrelation or a frequency domain analysis.
+3. Compare the detected pitch to the desired pitch or scale, and calculate the pitch shift needed to match the desired pitch.
+4. Shift the pitch of the frame to the desired pitch, using a pitch shifting algorithm, such as a time-domain pitch shifting or a frequency-domain pitch shifting.
+5. Overlap and add the pitch-shifted frames to reconstruct the output audio.
+
+There are different approaches for the pitch detection, for example using the pitch detection algorithm developed by McLeod and others, frequency domain method like the YIN pitch detection algorithm. Additionally, the pitch shifting can be accomplished using different methods, like the pitch shifting algorithm developed by D. G. Campell which is widely used today.
+
+The specific implementation and parameters of the effect will depend on the desired behavior and characteristics of the effect. Auto-Tune effect's parameters may include the key of the song, a 'retune speed', a 'humanize' option, and the target pitch.
+
+It's worth noting that a common criticism is that overuse of Auto-Tune can make vocals sound artificial or robotic, especially when the effect is applied too heavily.
+
+## Pitch Synchronous Overlap and Add
+
+The pitch shifting algorithm developed by D. G. Campell, often referred to as the "PSOLA" (Pitch Synchronous Overlap and Add) algorithm, is a popular method for performing pitch shifting on an audio signal. The basic idea behind the algorithm is to shift the pitch of an audio signal by changing the length of the individual samples, while maintaining the original temporal position of the samples.
+
+The PSOLA algorithm works by dividing the input audio signal into overlapping frames of a short duration (usually around 10-20 milliseconds). For each frame, the pitch shift is calculated and applied by stretching or shrinking the frame by the appropriate amount. The frames are then overlap-added together to reconstruct the output audio signal.
+
+To perform the pitch shifting, PSOLA uses the principle of time-scale modification. It stretches or shrinks small parts of the signal to change its pitch. The algorithm can then apply the time-scale modification locally on the signal, without changing its duration.
+
+The PSOLA algorithm can be further enhanced with methods such as time-domain formant preservation, to reduce the formant distortion introduced by the pitch shifting, or using a pitch synchronous windowing technique, which allows the algorithm to align and overlap frames based on their pitch period.
+
+The PSOLA algorithm is considered a high-quality and efficient method for pitch shifting, and it is widely used in a variety of audio processing applications, including Auto-Tune and other pitch correction software, speech synthesis, and audio resampling.
+
+```py
+import numpy as np
+
+def psola(audio, pitch_ratio, frame_size, hop_size):
+    # Determine the number of frames
+    num_frames = int((len(audio) - frame_size) / hop_size) + 1
+
+    # Allocate memory for the output audio
+    output = np.zeros(len(audio))
+
+    # Initialize the read and write pointers
+    read_pointer = 0
+    write_pointer = 0
+
+    for i in range(num_frames):
+        # Get the current frame from the input audio
+        frame = audio[read_pointer:read_pointer+frame_size]
+
+        # Get the next frame by shifting the read pointer
+        read_pointer += int(hop_size * pitch_ratio)
+        next_frame = audio[read_pointer:read_pointer+frame_size]
+
+        # Interpolate the next frame to match the length of the current frame
+        next_frame = np.interp(np.linspace(0, len(next_frame)-1, len(frame)),
+                              np.arange(len(next_frame)), next_frame)
+
+        # Overlap and add the current and next frames
+        overlap = (frame + next_frame) / 2
+        output[write_pointer:write_pointer+len(overlap)] += overlap
+
+        # Update the write pointer
+        write_pointer += int(hop_size)
+
+    return output
+```
+
+PSOLA stands for Pitch Synchronous Overlap-Add. It's an algorithm used to shift the pitch of an audio signal without changing its duration. PSOLA algorithm is based on the following steps:
+
+1. The audio signal is divided into overlapping frames
+2. The pitch ratio is applied to the frames, i.e., a ratio of 1.0 corresponds to no pitch shift, a ratio of 2.0 corresponds to an octave shift, and a ratio of 0.5 corresponds to an octave shift in the opposite direction
+3. Next, the frames are overlapped and added together to create the final output
+
+In the provided example, the PSOLA algorithm is implemented by the function `psola(audio, pitch_ratio, frame_size, hop_size)` where:
+
+- `audio` is the audio signal to be processed.
+- `pitch_ratio` is the factor by which the pitch of the audio signal will be shifted.
+- `frame_size` is the size of the frames in samples
+- `hop_size` is the number of samples between the start of consecutive frames.
+
+The function first calculates the number of frames by dividing the length of the audio signal by the hop size. Then it creates an empty array output of the same size as the audio signal. Using a while loop it processes each frame by:
+
+- grabbing the current frame from the audio signal using the read_pointer
+- shifting the read_pointer by the `hop_size * pitch_ratio` to grab the next frame
+- interpolating the next frame to match the size of the current frame using numpy's interp function
+- adding current and next frame to create overlap
+- updating the write_pointer
+- adding the overlap to the output array

@@ -1,0 +1,174 @@
+# Analysis
+
+## Onset Detection
+
+Onset detection is the process of identifying the start time of a sound or musical event in an audio signal. It's a fundamental task in many audio processing applications, such as music information retrieval, audio segmentation, and feature extraction.
+
+There are several approaches to onset detection, each with their own advantages and disadvantages. Here are a few common techniques that you may consider:
+
+- **Energy-based onset detection:** This approach is based on the idea that an onset is characterized by an increase in the overall energy of a signal. The most common way to implement this is to compute the short-time energy of the signal, and then look for local maxima above a certain threshold, or calculate the temporal derivative of the energy and look for peaks above a certain threshold.
+- **Spectral-based onset detection:** This approach is based on the idea that an onset is characterized by a sudden change in the frequency content of a signal. One popular method in this category is the complex domain method, which is based on the instantaneous frequency and phase of the signal, it consist of computing the short-term Fourier transform of the signal and then taking the magnitude and the phase of the resulting spectrum.
+- **Hybrid onset detection:** This approach combines the energy and spectral information by using both techniques above, and then combining their results using a certain strategy.
+- **Machine Learning Based Onset Detection:** This approach uses machine learning techniques to automatically learn the features that are characteristic of onsets. Common techniques are using supervised techniques like Random Forest, Neural Network and Decision Trees and unsupervised techniques like Clustering algorithms.
+
+You can start with one of these approaches and modify it to your specific use case. Once you have a basic algorithm working, you can then optimize it and try different parameters, feature extractions, and combinations of features to improve its performance.
+
+It is also common to evaluate the performance of onset detection algorithms using metrics such as precision, recall, and F1 score, and comparing it with other algorithms in the literature or with a dataset of annotated audio files.
+
+It's worth noting that onset detection can be a challenging task, especially when the audio signals have a high degree of variability, such as in polyphonic music, or when the signals are noisy or have a high degree of overlapping.
+
+```py
+import numpy as np
+
+def energy_onset_detection(signal, sr, frame_size=2048, hop_size=512, threshold=0.5):
+    """
+    Energy-based onset detection
+
+    Parameters:
+    signal (1d array): the audio signal
+    sr (int): the sample rate of the signal
+    frame_size (int, optional): the window size in samples
+    hop_size (int, optional): the hop size between consecutive frames
+    threshold (float, optional): the threshold for detecting an onset
+
+    Returns:
+    onsets (1d array): the onset times in seconds
+    """
+    # Compute the short-term energy
+    frames = np.array([signal[i:i+frame_size] for i in range(0, len(signal)-frame_size, hop_size)])
+    energy = np.sum(frames ** 2, axis=1)
+
+    # Find the onsets
+    onsets = []
+    for i in range(1, len(energy)):
+        if energy[i] > threshold * energy[i-1]:
+            onsets.append(i * hop_size / sr)
+
+    return onsets
+```
+
+In this example, the signal is first divided into frames using the specified frame size and hop size. The energy of each frame is computed as the sum of the squares of the samples. Next, the algorithm looks for frames where the energy is above a certain threshold (threshold) compared to the previous frame. The sample indices of these frames are then converted to seconds using the sample rate sr, and returned as the onset times.
+
+You can adjust the frame size and hop size depending on the desired time resolution and frequency resolution of the algorithm. The threshold parameter can also be tuned to better suit the audio material. It's often useful to try different values and see how the algorithm performs.
+It's also worth noting that this is a simple example, there are many more advanced methods for energy-based onset detection, which typically combine multiple features, such as the derivate of energy, the zero crossing rate, or the spectral contrast.
+
+### Spectral Contrast
+
+Spectral contrast is a feature that aims to capture the relative changes in the amplitude of different frequency components of an audio signal. It is often used in music information retrieval and audio analysis tasks, such as onset detection, segmentation, and instrument recognition.
+
+Spectral contrast typically consists of several steps:
+
+1. The audio signal is divided into overlapping frames
+2. The power spectrum of each frame is computed (commonly with a FFT)
+3. A spectral contrast function is applied to the power spectrum to extract the spectral contrast feature.
+
+There are different ways to compute the spectral contrast, but most methods involve the following steps:
+
+- Computing the mean power of the signal in different frequency bands
+- Computing the deviation from the mean power in each frequency band
+- Normalizing the deviation by the mean power of the signal
+
+One common method for computing the spectral contrast is based on the following equation:
+
+```py
+spectral_contrast = (S_f - M_f) / M_f
+```
+
+Where `S_f` is the power spectrum of a frame, `M_f` is the mean power spectrum of all frames, and the division is element-wise.
+
+The resulting spectral contrast feature is a measure of the relative changes in the amplitude of different frequency components of the audio signal. These relative changes are often related to the presence of a musical event or onset, and thus spectral contrast can be used as a feature for onset detection or other similar tasks.
+
+In practice, It's often useful to compute the spectral contrast over several frequency bands, to give more detailed information about the different frequency components in the signal and to make the feature more robust to changes in overall loudness. It can also be useful to apply various windowing techniques, such as Hanning, Blackman, and Kaiser, to improve the spectral resolution.
+
+### Testing
+
+Sure, precision, recall, and the F1 score are metrics that are commonly used to evaluate the performance of a binary classification task, such as onset detection.
+
+- **Precision** is the proportion of true positive detections (correctly detected onsets) out of all positive detections (all detections that the algorithm has made). It is a measure of the algorithm's ability to avoid false positives (detecting an onset when there is none).
+- **Recall** is the proportion of true positive detections out of all actual onsets. It measures the ability of the algorithm to detect all the actual onsets.
+- **F1 Score** is the harmonic mean of precision and recall. It balances the trade-off between precision and recall and it is a good overall measure of the performance of the algorithm
+
+In onset detection, precision can be understood as how many onsets the algorithm identified are truly onsets, while recall is how many of the onsets in the audio were detected by the algorithm.
+
+F1-score is a commonly used measure, because it takes into account the balance of precision and recall, and it gives good indicator of the performance of the algorithm. It is a way to combine precision and recall into a single metric, and it reaches its best value at 1 (perfect precision and recall) and worst at 0.
+
+It's worth noting that these measures are based on the assumption that the audio file is already labeled with ground-truth onsets and thus, you can compare the detections of the algorithm against this ground-truth to evaluate the performance.
+
+It's also worth noting that there are other ways to evaluate onset detection algorithms as well, such as information retrieval metrics like mean reciprocal rank and precision at n, which can provide more detailed information about the performance of the algorithm for different use cases.
+
+```py
+import numpy as np
+
+def f1_score(detected_onsets, true_onsets):
+    """
+    Compute the F1 score for an onset detection algorithm
+
+    Parameters:
+    detected_onsets (1d array): the onset times detected by the algorithm
+    true_onsets (1d array): the true onset times
+
+    Returns:
+    f1 (float): the F1 score
+    """
+    detected_onsets = np.array(detected_onsets)
+    true_onsets = np.array(true_onsets)
+
+    # Find true positives (correct detections)
+    true_positives = np.intersect1d(detected_onsets, true_onsets, assume_unique=True, return_indices=False)
+    tp = len(true_positives)
+
+    # Find false positives (detected onsets that are not true onsets)
+    false_positives = np.setdiff1d(detected_onsets, true_onsets, assume_unique=True)
+    fp = len(false_positives)
+
+    # Find false negatives (true onsets that are not detected)
+    false_negatives = np.setdiff1d(true_onsets, detected_onsets, assume_unique=True)
+    fn = len(false_negatives)
+
+    # Calculate precision and recall
+    precision = tp / (tp + fp)
+    recall = tp / (tp + fn)
+
+    # Calculate F1 score
+    f1 = 2 * (precision * recall) / (precision + recall)
+
+    return f1
+
+def f1_score_with_tolerance(detected_onsets, true_onsets, tolerance=0.1):
+    """
+    Compute the F1 score for an onset detection algorithm
+
+    Parameters:
+    detected_onsets (1d array): the onset times detected by the algorithm
+    true_onsets (1d array): the true onset times
+    tolerance (float, optional): the tolerance for considering a detection as a true positive in seconds
+
+    Returns:
+    f1 (float): the F1 score
+    """
+    tp = 0
+    fp = 0
+    fn = 0
+    for onset in true_onsets:
+        match = [i for i in detected_onsets if abs(i-onset) <= tolerance]
+        if len(match) > 0:
+            tp += 1
+        else:
+            fn += 1
+
+    for onset in detected_onsets:
+        match = [i for i in true_onsets if abs(i-onset) <= tolerance]
+        if len(match) == 0:
+            fp += 1
+
+    precision = tp / (tp + fp)
+    recall = tp / (tp + fn)
+    f1 = 2 * (precision * recall) / (precision + recall)
+    return f1
+```
+
+In this example, the `f1_score` function takes in the detected onset times `detected_onsets` and the true onset times `true_onsets` as inputs, along with an optional `tolerance` value tolerance. The function uses numpy's `intersect1d` to find the true positives (onsets that were correctly detected by the algorithm) and `setdiff1d` to find the false positives (onsets that were detected by the algorithm but are not true onsets) and false negatives (true onsets that were not detected). It then calculates precision, recall and the F1 score using the formula given above.
+
+It's worth noting that in the example above the tolerance argument is used to define the window of time that a true onset can be detected and still be considered a true positive. The tolerance argument allows for some small deviation in the onset detection. The tolerance can be adjusted depending on the characteristics of the audio material and the specific use case.
+
+It's also worth noting that these metrics can be evaluated on different sections of the audio, such as on each individual track or for different type of instruments. In addition, for some cases, instead of using a set tolerance for all onsets, tolerance can be adaptive, based on the specific characteristics of the audio signal.

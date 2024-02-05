@@ -1,0 +1,139 @@
+# Resample
+
+There are several different approaches to audio resampling, each with its own strengths and weaknesses. If you're just getting started with learning about audio resampling, here are a few areas you might consider exploring:
+
+- **Theory of Sampling:** Understanding the theory of sampling is crucial for understanding audio resampling. This includes concepts such as Nyquist frequency, aliasing, and anti-aliasing. A good place to start is by reading the original Nyquist paper: "Certain factors affecting telegraph speed" (1928) by Harry Nyquist.
+- **Interpolation:** Interpolation is a key part of audio resampling. It involves estimating the value of a signal at points between the original samples. Understanding the different types of interpolation methods, such as linear interpolation, spline interpolation, and sinc interpolation is important when selecting a method for resampling.
+- **Resampling Algorithms:** There are several common audio resampling algorithms such as the Zero Order Hold, linear interpolation, and polyphase filter implementation. Understanding the trade-offs and best use-cases of each algorithm can be crucial when selecting the right algorithm for a specific task.
+- **Quality Metrics:** To evaluate the quality of the resampling process, you should familiarize yourself with the common audio quality metrics such as the PSNR, MSE, SSIM and PEAQ.
+- **Practice:** Finally, practice implementing different resampling algorithms using programming tools and libraries such as python, Matlab or C++. This will give you a hands-on understanding of how resampling algorithms work and help you develop a sense of when to use a particular algorithm.
+
+It's important to understand that while audio resampling is a well-established field, there's always room for innovation and research in this area. Keeping up to date with the latest research in audio resampling and digital signal processing in general can be a good way to continue learning and expanding your knowledge.
+
+- **Zero Order Hold (ZOH):** The Zero Order Hold (ZOH) is a simple and computationally efficient method for resampling a signal. The basic idea behind ZOH is to hold the value of the signal constant between each sample, and then select new samples at the desired rate. ZOH is easy to implement and computationally efficient, but it can introduce significant aliasing and distortion.
+- **Linear Interpolation:** Linear interpolation is a resampling method that estimates the value of a signal at points between the original samples by fitting a straight line between the two closest samples. Linear interpolation is an improvement over ZOH, as it reduces the amount of aliasing and distortion. However, it is still relatively simple and computationally efficient.
+- **Polyphase filter:** Polyphase filter is a technique for resampling a signal by using a bank of filters, where each filter is designed for a specific sample rate ratio. The main advantage of the polyphase filter is the ability to design the filter bank such that it's more efficient in the stop-band, and reduce the effect of aliasing to a minimum. They are often used in conjunction with other anti-aliasing filters, like a low-pass filter, which will improve even more the quality of the resampled signal.
+
+It's worth noting that each of these algorithms has its own unique trade-offs, and the choice of which algorithm to use depends on the specific use case and the desired balance between computational efficiency and output quality.
+
+In general, zero order hold is the most computationally efficient and simple of the three methods, but it can produce significant aliasing and distortion. Linear interpolation is a significant improvement, but it can still introduce some distortion. Polyphase filters are the most complex and computationally intensive of the three, but they also produce the highest-quality output, with the least distortion and aliasing.
+
+## Linear Interpolation Resampler
+
+```py
+import numpy as np
+
+def linear_interpolation_downsampling(signal, factor):
+    """
+    Downsamples the input signal using linear interpolation
+
+    Parameters:
+    signal (1d array): The input signal
+    factor (int): The downsampling factor
+
+    Returns:
+    downsampled (1d array): The downsampled signal
+    """
+    # Number of samples in the input signal
+    N = len(signal)
+
+    # Create an array of indices at which to sample the input signal
+    indices = np.linspace(0, N-1, N//factor, endpoint=False)
+    indices = indices.astype(np.int)
+
+    # Select samples at the new indices
+    downsampled = signal[indices]
+
+    # Linear interpolation
+    for i in range(1, len(downsampled)):
+        fraction = indices[i] - indices[i-1] - 1
+        increment = (signal[indices[i]] - signal[indices[i-1]]) / (fraction + 1)
+        for j in range(1, fraction + 1):
+            downsampled = np.insert(downsampled, i+j-1, signal[indices[i-1]] + j*increment)
+
+    return downsampled
+```
+
+In this example, the input signal is a 1D array of samples and the downsampling factor is an integer specifying how much the signal should be downsampled (e.g. a factor of 2 will downsample the signal to half its original rate).
+
+The function first creates an array of indices at which to sample the input signal, using numpy's `linspace` function. The indices array is then converted to integer, since the signal array is indexed by integer position. After this, it selects the samples at the new indices, and these are stored in the downsampled array.
+
+Then, it performs a linear interpolation on the downsampled signal by iterating through the array of samples, computing the increment between each adjacent pair of samples and inserting the extra samples to create a smooth transition between the adjacent pair of samples.
+
+Keep in mind that downsampling audio data will lose information and quality. It's always recommended to use a low-pass filter to mitigate this effect before downsampling, it will help to remove the high frequencies which will not be present in the downsampled signal.
+
+## Polyphase Filter Resampler
+
+```py
+import scipy.signal as sig
+
+def polyphase_resampling(signal, factor, filter_type='FIR', upsample=False):
+    """
+    Resamples the input signal using a polyphase filter
+
+    Parameters:
+    signal (1d array): The input signal
+    factor (int): The resampling factor
+    filter_type (str): The type of filter to use. Can be 'FIR' or 'IIR'.
+    upsample (bool): The flag to indicate if we want to upsample or downsample
+
+    Returns:
+    resampled (1d array): The resampled signal
+    """
+    # Number of taps for the low-pass filter
+    numtaps = 64
+
+    # Design the low-pass filter
+    if upsample:
+        cutoff = (1-1/(factor+1))/2
+    else:
+        cutoff = 1/factor
+
+    if filter_type == 'FIR':
+        lowpass_coeffs = sig.firwin(numtaps, cutoff)
+    elif filter_type == 'IIR':
+        lowpass_coeffs = sig.iirfilter(numtaps, cutoff)
+    else:
+        raise ValueError("filter_type must be 'FIR' or 'IIR'")
+
+    # Apply the low-pass filter
+    filtered = sig.lfilter(lowpass_coeffs, 1, signal)
+
+    # Create the polyphase filter bank
+    poly_filters = sig.decimate(lowpass_coeffs, factor, n=numtaps, ftype='fir')
+
+    if upsample:
+        # Add zeros between each sample in the filtered signal
+        upsampled = np.zeros(len(filtered) * factor)
+        upsampled[::factor] = filtered
+        resampled = []
+        for pf in poly_filters:
+            resampled.append(sig.lfilter(pf, 1, upsampled)[::factor])
+    else:
+        # Apply the polyphase filter bank
+        resampled = []
+        for pf in poly_filters:
+            resampled.append(sig.lfilter(pf, 1, filtered)[::factor])
+    return resampled
+```
+
+In this example, I've added an optional parameter upsample, a flag that indicates whether you want to upsample or downsample the input signal.
+
+For upsampling, it sets the low-pass filter's cutoff frequency to be the center frequency of the pass-band. The low-pass filter will pass all the frequencies below the cutoff frequency.
+Then, the function adds zeros between each sample in the filtered signal, the filter bank is then applied to the upsampled signal to reshape the output to the correct format.
+
+For downsampling, it works similar to the previous example but applying the filter bank on the filtered signal directly.
+
+By setting the upsample parameter to True or False, you can use the same function to both upsample and downsample your audio signal. It's worth noting that the upsampling process will introduce a high-frequency content that was not present in the original signal.
+
+## Testing Resamplers
+
+There are several algorithms that can be used to test the quality of an audio resampling algorithm. Some of the most common include:
+
+1. **Peak Signal-to-Noise Ratio (PSNR):** PSNR is a measure of the difference between the original signal and the resampled signal, in terms of power. It is calculated as the ratio of the peak power of the original signal to the mean square error between the original signal and the resampled signal.
+2. **Mean Squared Error (MSE):** MSE is a measure of the average squared difference between the original signal and the resampled signal. It is calculated by taking the mean of the square of the difference between the original signal and the resampled signal.
+3. **Structural Similarity Index (SSIM):** SSIM is a measure of the similarity between the original signal and the resampled signal based on the structural and visual quality. It is calculated by comparing different statistical properties of the two signals, such as mean, standard deviation, and cross-covariance.
+4. **Frequency-domain Metrics:** like the Spectral Linearity, Signal-to-Noise Ratio in the Frequency Domain (SNR-FD), and Spectral Flatness. These metrics are based on the analysis of the signal in the frequency-domain, can give you a good insight into the performance of the algorithm, the quality of the frequency representation, and it's linearity.
+5. **Perceptual Metrics:** Like the PEAQ (Perceptual Evaluation of Audio Quality) or ITU-R BS.1770, which are not only based on the signal but also on psychoacoustic and auditory perception. These metrics take into account not just the technical characteristics of the sound but also how it is perceived by the human ear.
+
+It's worth noting that these metrics are not mutually exclusive and can provide complementary information about the performance of an audio resampling algorithm. For example, PSNR and MSE are good indicators of the quantization error introduced by the algorithm, while SSIM and PEAQ provide more information about the perceived quality of the resampled audio. Additionally, it's worth to evaluate the performance of the algorithm on a wide variety of audio content, to check if it performs well across different types of audio material.

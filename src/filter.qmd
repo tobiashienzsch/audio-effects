@@ -1,0 +1,13 @@
+# Filter
+
+- [THE ART OF VA FILTER DESIGN](https://www.native-instruments.com/fileadmin/ni_media/downloads/pdf/VAFilterDesign_2.0.0a.pdf)
+
+## IIR
+
+## FIR
+
+## StateVariableFilter
+
+## Dynamic Smoothing
+
+- <https://cytomic.com/files/dsp/DynamicSmoothing.pdf>

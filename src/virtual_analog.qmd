@@ -1,0 +1,11 @@
+# Virtual Analog
+
+## Nodal Analysis
+
+- [JUCE: DK-Method (GitHub)](https://github.com/joaorossi/dkmethod)
+- [JUCE: DK-Method (PDF)](https://raw.githubusercontent.com/joaorossi/dkmethod/master/docs/DK-Method%20for%20JUCE.pdf)
+- [Matlab: DK-Method](https://github.com/jardamacak/NodalDKFramework)
+- [Zvex Wooly Mammoth: Schematic](http://effectslayouts.blogspot.com/2014/12/zvex-wooly-mammoth.html)
+- [Nodal Analysis: BJT & Tube](https://ccrma.stanford.edu/~dtyeh/papers/yeh12_taslp.pdf)
+
+## Wave-Digital Filter
