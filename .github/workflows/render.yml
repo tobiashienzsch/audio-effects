@@ -1,0 +1,38 @@
+name: Render
+
+on:
+  workflow_dispatch:
+  push:
+    branches: main
+
+permissions:
+  contents: write
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          tinytex: true
+
+      - uses: actions/setup-python@v5
+        with:
+          cache: "pip"
+          python-version: "3.x"
+      - run: pip install -r requirements.txt
+
+      - name: Render Quarto Project
+        uses: quarto-dev/quarto-actions/render@v2
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Perceptual-Convolution
+          path: _book
+          if-no-files-found: error
+          retention-days: 7

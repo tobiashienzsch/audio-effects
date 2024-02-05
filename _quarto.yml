@@ -1,0 +1,25 @@
+project:
+  type: book
+
+book:
+  title: "Audio Effects"
+  author: "Tobias Hienzsch"
+  chapters:
+    - index.qmd
+    - src/intro.qmd
+    - src/summary.qmd
+    - src/references.qmd
+
+toc: true
+number-sections: true
+bibliography: references.bib
+
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    code-tools: true
+  pdf:
+    documentclass: scrreprt
+    colorlinks: true
+    papersize: a4

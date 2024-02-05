@@ -1,0 +1,10 @@
+.idea
+.vs
+.vscode
+
+/_book
+/.quarto
+/venv
+/.quarto/
+
+coefficient_selection_files
