@@ -72,6 +72,6 @@ f = sympy.Piecewise(  # Hard-clip
 # f = sympy.Piecewise((x, sympy.Gt(x, 0)), (sympy.Abs(x), True))  # Half-wave
 AD1 = sympy.integrate(f, x)
 AD2 = sympy.integrate(AD1, x)
-print(f)
-print(AD1)
-print(AD2)
+print(sympy.latex(f))
+print(sympy.latex(AD1))
+print(sympy.latex(AD2))

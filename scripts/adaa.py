@@ -71,7 +71,8 @@ def process_nonlin(fc, FS, nonlin, gain=10):
 
 
 def signum(x):
-    return int(0 < x) - int(x < 0)
+    return np.where(x > 0, +1, np.where(x < 0, -1, 0))
+    # return int(0 < x) - int(x < 0)
 
 
 def hardClip(x):
@@ -102,25 +103,34 @@ def softClipAD1(x):
     return -x**4/27 + x**2/2
 
 
+def overdrive(x):
+    return np.where(
+        (x > 0) & (x < 1/3), 2*x*signum(x),
+        np.where(
+            (x >= 1/3) & (x <= 2/3), ((3-(2-3*x)**2)/3)*signum(x), 1*signum(x)
+        )
+    )
+
+
 FC = 1244.5
 FS = 44100
-OS = 2
+OS = 16
 
-hardClip_ADAA1 = ADAA1(hardClip, hardClipAD1, 1.0e-5)
-hardClip_ADAA2 = ADAA2(hardClip, hardClipAD1, hardClipAD2, 1.0e-5)
+# overdrive_ADAA1 = ADAA1(overdrive, overdriveAD1, 1.0e-5)
+# overdrive_ADAA2 = ADAA2(overdrive, overdriveAD1, overdriveAD2, 1.0e-5)
 
-freqs_analog, fft_analog = process_nonlin(FC, FS*100, hardClip)
-freqs_alias, fft_alias = process_nonlin(FC, FS, hardClip)
-freqs_os, fft_os = process_nonlin(FC, FS*OS, hardClip)
-freqs_ad1, fft_ad1 = process_nonlin(FC, FS*OS, hardClip_ADAA1.process)
-freqs_ad2, fft_ad2 = process_nonlin(FC, FS*OS, hardClip_ADAA2.process)
+freqs_analog, fft_analog = process_nonlin(FC, FS*100, overdrive)
+freqs_alias, fft_alias = process_nonlin(FC, FS, overdrive)
+freqs_os, fft_os = process_nonlin(FC, FS*OS, overdrive)
+# freqs_ad1, fft_ad1 = process_nonlin(FC, FS*OS, overdrive_ADAA1.process)
+# freqs_ad2, fft_ad2 = process_nonlin(FC, FS*OS, overdrive_ADAA2.process)
 peak_idxs = signal.find_peaks(fft_analog, 65)[0]
 
-# plt.plot(freqs_analog, fft_analog, '--', c='red', label='Analog')
+plt.plot(freqs_analog, fft_analog, '--', c='red', label='Analog')
 # plt.plot(freqs_alias, fft_alias, '--', c='green', label='No ADAA')
-plt.plot(freqs_os, fft_os, '--', c='orange', label=f'OS{OS}')
-plt.plot(freqs_ad1, fft_ad1, 'green', label=f'ADAA1 + OS{OS}')
-plt.plot(freqs_ad2, fft_ad2, 'blue', label=f'ADAA2 + OS{OS}')
+plt.plot(freqs_os, fft_os, '--', c='blue', label=f'OS{OS}')
+# plt.plot(freqs_ad1, fft_ad1, 'green', label=f'ADAA1 + OS{OS}')
+# plt.plot(freqs_ad2, fft_ad2, 'blue', label=f'ADAA2 + OS{OS}')
 plt.legend()
 plt.scatter(freqs_analog[peak_idxs], fft_analog[peak_idxs], c='r', marker='x')
 plt.xlim(0, 20000)

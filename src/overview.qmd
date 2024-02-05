@@ -70,6 +70,55 @@ Keep in mind that this is just one way to implement an audio transient shaper ef
 - <https://github.com/jatinchowdhury18/audio_dspy/blob/master/audio_dspy/nonlinearities.py>
 - [ARBITRARY-ORDER IIR ANTIDERIVATIVE ANTIALIASING](https://www.dafx.de/paper-archive/2021/proceedings/papers/DAFx20in21_paper_27.pdf)
 
+### Common Nonlinearities
+
+```{python}
+from IPython.display import display, Math, Latex
+import sympy
+
+x = sympy.Symbol('x', real=True)
+f = -sympy.sin(sympy.pi*0.5*x)
+AD1 = sympy.integrate(f, x)
+AD2 = sympy.integrate(AD1, x)
+```
+
+```{python}
+Math(sympy.latex(f))
+```
+
+```{python}
+Math(sympy.latex(AD1))
+```
+
+```{python}
+Math(sympy.latex(AD2))
+```
+
+#### Hard-clip
+
+$$
+\begin{cases} -1 & \text{for}\: x \leq -1 \\1 & \text{for}\: x \geq 1 \\x & \text{otherwise} \end{cases}
+$$ {#eq-hard-clip}
+$$
+\begin{cases} - x & \text{for}\: x \leq -1 \\\frac{x^{2}}{2} + \frac{1}{2} & \text{for}\: x \leq 1 \\x & \text{otherwise} \end{cases}
+$$ {#eq-hard-clip-ad1}
+$$
+\begin{cases} - \frac{x^{2}}{2} & \text{for}\: x \leq -1 \\\frac{x^{3}}{6} + \frac{x}{2} + \frac{1}{6} & \text{for}\: x \leq 1 \\\frac{x^{2}}{2} + \frac{1}{3} & \text{otherwise} \end{cases}
+$$ {#eq-hard-clip-ad2}
+
+#### Overdrive
+
+$$
+\begin{cases} 2 x \operatorname{sign}{\left(x \right)} & \text{for}\: x \geq 0 \wedge x \leq \frac{1}{3} \\1 - \frac{\left(2 - 3 x\right)^{2}}{3} & \text{for}\: x \leq \frac{2}{3} \wedge x > \frac{1}{3} \\1 & \text{otherwise} \end{cases}
+$$ {#eq-overdrive}
+
+$$
+\begin{cases} x & \text{for}\: x \leq 0 \\\begin{cases} - x^{2} & \text{for}\: x < 0 \\x^{2} & \text{otherwise} \end{cases} & \text{for}\: x \leq \frac{1}{3} \\- x^{3} + 2 x^{2} - \frac{x}{3} + \frac{1}{27} & \text{for}\: x \leq \frac{2}{3} \\x - \frac{7}{27} & \text{otherwise} \end{cases}
+$$ {#eq-overdrive-ad1}
+
+$$
+\begin{cases} \frac{x^{2}}{2} & \text{for}\: x \leq 0 \\\frac{x^{3}}{3} & \text{for}\: x \leq \frac{1}{3} \\- \frac{x^{4}}{4} + \frac{2 x^{3}}{3} - \frac{x^{2}}{6} + \frac{x}{27} - \frac{1}{324} & \text{for}\: x \leq \frac{2}{3} \\\frac{x^{2}}{2} - \frac{7 x}{27} + \frac{5}{108} & \text{otherwise} \end{cases}
+$$ {#eq-overdrive-ad2}
 
 ## Virtual Analog
 
