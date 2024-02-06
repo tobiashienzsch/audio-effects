@@ -2,6 +2,79 @@
 
 - <http://www.dangelo.audio/#research>
 
+
+## Antiderivative Anti-Aliasing
+
+```{python}
+#| lst-label: lst-adaa1-python
+#| lst-cap: 1st Order ADAA in Python
+class ADAA1:
+    def __init__(self, f, AD1, TOL=1.0e-5):
+        self.TOL = TOL
+        self.f = f
+        self.AD1 = AD1
+
+    def process(self, x):
+        y = np.copy(x)
+        x1 = 0.0
+        for n, _ in enumerate(x):
+            if np.abs(x[n] - x1) < self.TOL:  # fallback
+                y[n] = self.f((x[n] + x1) / 2)
+            else:
+                y[n] = (self.AD1(x[n]) - self.AD1(x1)) / (x[n] - x1)
+            x1 = x[n]
+        return y
+```
+
+- <https://ccrma.stanford.edu/~jatin/Notebooks/adaa.html>
+- <https://github.com/jatinchowdhury18/ADAA>
+- <https://github.com/jatinchowdhury18/audio_dspy/blob/master/audio_dspy/nonlinearities.py>
+- [ARBITRARY-ORDER IIR ANTIDERIVATIVE ANTIALIASING](https://www.dafx.de/paper-archive/2021/proceedings/papers/DAFx20in21_paper_27.pdf)
+
+
+```{python}
+#| lst-label: lst-adaa2-python
+#| lst-cap: 2nd Order ADAA in Python
+class ADAA2:
+    def __init__(self, f, AD1, AD2, TOL=1.0e-5):
+        self.TOL = TOL
+        self.f = f
+        self.AD1 = AD1
+        self.AD2 = AD2
+
+    def process(self, x):
+        y = np.copy(x)
+
+        def calcD(x0, x1):
+            if np.abs(x0 - x1) < self.TOL:
+                return self.AD1((x0 + x1) / 2.0)
+            return (self.AD2(x0) - self.AD2(x1)) / (x0 - x1)
+
+        def fallback(x0, x2):
+            x_bar = (x0 + x2) / 2.0
+            delta = x_bar - x0
+
+            if delta < self.TOL:
+                return self.f((x_bar + x0) / 2.0)
+            return (
+                (2.0 / delta) * (self.AD1(x_bar)
+              + (self.AD2(x0) - self.AD2(x_bar)) / delta)
+            )
+
+        x1 = 0.0
+        x2 = 0.0
+        for n, _ in enumerate(x):
+            if np.abs(x[n] - x1) < self.TOL:  # fallback
+                y[n] = fallback(x[n], x2)
+            else:
+                y[n] = (2.0 / (x[n] - x2)) * (calcD(x[n], x1) - calcD(x1, x2))
+            x2 = x1
+            x1 = x[n]
+        return y
+```
+
+
+
 ## Nonlinearities
 
 ```{python}
@@ -473,65 +546,3 @@ plt.grid()
 plt.legend()
 plt.show()
 ```
-
-## Antiderivative Anti-Aliasing
-
-```python
-class ADAA1:
-    def __init__(self, f, AD1, TOL=1.0e-5):
-        self.TOL = TOL
-        self.f = f
-        self.AD1 = AD1
-
-    def process(self, x):
-        y = np.copy(x)
-        x1 = 0.0
-        for n, _ in enumerate(x):
-            if np.abs(x[n] - x1) < self.TOL:  # fallback
-                y[n] = self.f((x[n] + x1) / 2)
-            else:
-                y[n] = (self.AD1(x[n]) - self.AD1(x1)) / (x[n] - x1)
-            x1 = x[n]
-        return y
-```
-
-```python
-class ADAA2:
-    def __init__(self, f, AD1, AD2, TOL=1.0e-5):
-        self.TOL = TOL
-        self.f = f
-        self.AD1 = AD1
-        self.AD2 = AD2
-
-    def process(self, x):
-        y = np.copy(x)
-
-        def calcD(x0, x1):
-            if np.abs(x0 - x1) < self.TOL:
-                return self.AD1((x0 + x1) / 2.0)
-            return (self.AD2(x0) - self.AD2(x1)) / (x0 - x1)
-
-        def fallback(x0, x2):
-            x_bar = (x0 + x2) / 2.0
-            delta = x_bar - x0
-
-            if delta < self.TOL:
-                return self.f((x_bar + x0) / 2.0)
-            return (2.0 / delta) * (self.AD1(x_bar) + (self.AD2(x0) - self.AD2(x_bar)) / delta)
-
-        x1 = 0.0
-        x2 = 0.0
-        for n, _ in enumerate(x):
-            if np.abs(x[n] - x1) < self.TOL:  # fallback
-                y[n] = fallback(x[n], x2)
-            else:
-                y[n] = (2.0 / (x[n] - x2)) * (calcD(x[n], x1) - calcD(x1, x2))
-            x2 = x1
-            x1 = x[n]
-        return y
-```
-
-- <https://ccrma.stanford.edu/~jatin/Notebooks/adaa.html>
-- <https://github.com/jatinchowdhury18/ADAA>
-- <https://github.com/jatinchowdhury18/audio_dspy/blob/master/audio_dspy/nonlinearities.py>
-- [ARBITRARY-ORDER IIR ANTIDERIVATIVE ANTIALIASING](https://www.dafx.de/paper-archive/2021/proceedings/papers/DAFx20in21_paper_27.pdf)
