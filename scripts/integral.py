@@ -58,20 +58,25 @@ f = sympy.sign(x)*2*x
 f = (3-(2-3*x)**2) / 3
 f = 1
 f = sympy.Piecewise(  # Hard-clip
-    (-1 , sympy.Le(x, -1)),
-    (1 , sympy.Ge(x, 1)),
+    (-1, sympy.Le(x, -1)),
+    (1, sympy.Ge(x, 1)),
     (x, True),
 )
-# f = sympy.Piecewise(  # Overdrive
-#     (sympy.sign(x)*2*x, sympy.And(sympy.Ge(x, 0) , sympy.Le(x, sympy.Rational(1,3)))),
-#     ((3-(2-3*x)**2) / 3, sympy.Gt(x, sympy.Rational(1,3)) & sympy.Le(x, sympy.Rational(2,3))),
-#     (1, True)
-# )
-# f = sympy.sign(x)*(1-sympy.exp(-sympy.Abs(x)))
-# f = sympy.Abs(x)  # Full-wave
-# f = sympy.Piecewise((x, sympy.Gt(x, 0)), (sympy.Abs(x), True))  # Half-wave
+f = sympy.Piecewise(  # Overdrive
+    (sympy.sign(x)*2*x, sympy.And(sympy.Ge(x, 0), sympy.Le(x, sympy.Rational(1, 3)))),
+    ((3-(2-3*x)**2) / 3, sympy.Gt(x, sympy.Rational(1, 3))
+     & sympy.Le(x, sympy.Rational(2, 3))),
+    (1, True)
+)
+f = sympy.sign(x)*(1-sympy.exp(-sympy.Abs(x)))
+f = sympy.Abs(x)  # Full-wave
+f = sympy.Piecewise((x, sympy.Gt(x, 0)), (sympy.Abs(x), True))  # Half-wave
+f = sympy.Piecewise((1-sympy.exp(x), sympy.Gt(x, 0)),
+                    (-1+sympy.exp(x), True))  # Soft-Clip Exp
+f = 16*x**5 - 20*x**3 + 5*x
+f = 0.2 * (sympy.exp(1.79*x) - 1.0)
 AD1 = sympy.integrate(f, x)
 AD2 = sympy.integrate(AD1, x)
-print(sympy.latex(f))
-print(sympy.latex(AD1))
-print(sympy.latex(AD2))
+print(f)
+print(AD1)
+print(AD2)

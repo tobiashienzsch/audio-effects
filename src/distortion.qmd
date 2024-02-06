@@ -2,13 +2,6 @@
 
 - <http://www.dangelo.audio/#research>
 
-## ADAA
-
-- <https://ccrma.stanford.edu/~jatin/Notebooks/adaa.html>
-- <https://github.com/jatinchowdhury18/ADAA>
-- <https://github.com/jatinchowdhury18/audio_dspy/blob/master/audio_dspy/nonlinearities.py>
-- [ARBITRARY-ORDER IIR ANTIDERIVATIVE ANTIALIASING](https://www.dafx.de/paper-archive/2021/proceedings/papers/DAFx20in21_paper_27.pdf)
-
 ## Nonlinearities
 
 ```{python}
@@ -25,6 +18,124 @@ x = sympy.Symbol('x', real=True)
 x_in = np.linspace(-2.0, 2.0, 512)
 ```
 
+
+### Full-Wave Rectifier
+
+
+```{python}
+#| echo: false
+f = sympy.Abs(x)
+AD1 = sympy.integrate(f, x)
+AD2 = sympy.integrate(AD1, x)
+
+f_out = lambdify(x, f, 'numpy')(x_in)
+AD1_out = lambdify(x, AD1, 'numpy')(x_in)
+AD2_out = lambdify(x, AD2, 'numpy')(x_in)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(f)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+#| fig-align: center
+plt.plot(x_in, f_out, label="f")
+plt.plot(x_in, AD1_out, label="AD1")
+plt.plot(x_in, AD2_out, label="AD2")
+plt.grid()
+plt.legend()
+plt.show()
+```
+
+### Half-Wave Rectifier
+
+```{python}
+#| echo: false
+f = sympy.Piecewise((x, sympy.Gt(x, 0)), (0, True))
+AD1 = sympy.integrate(f, x)
+AD2 = sympy.integrate(AD1, x)
+
+f_out = lambdify(x, f, 'numpy')(x_in)
+AD1_out = lambdify(x, AD1, 'numpy')(x_in)
+AD2_out = lambdify(x, AD2, 'numpy')(x_in)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(f)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+#| fig-align: center
+plt.plot(x_in, f_out, label="f")
+plt.plot(x_in, AD1_out, label="AD1")
+plt.plot(x_in, AD2_out, label="AD2")
+plt.grid()
+plt.legend()
+plt.show()
+```
+
+### Schottky-Diode Rectifier
+
+```{python}
+#| echo: false
+f = 0.2 * (sympy.exp(1.79*x) - 1.0)
+AD1 = sympy.integrate(f, x)
+AD2 = sympy.integrate(AD1, x)
+
+f_out = lambdify(x, f, 'numpy')(x_in)
+AD1_out = lambdify(x, AD1, 'numpy')(x_in)
+AD2_out = lambdify(x, AD2, 'numpy')(x_in)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(f)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+#| fig-align: center
+plt.plot(x_in, f_out, label="f")
+plt.plot(x_in, AD1_out, label="AD1")
+plt.plot(x_in, AD2_out, label="AD2")
+plt.grid()
+plt.legend()
+plt.show()
+```
 
 ### Soft-Clipper (3rd Degree)
 
@@ -115,6 +226,45 @@ plt.legend()
 plt.show()
 ```
 
+### Soft-Clipper Exponential
+
+```{python}
+#| echo: false
+f = sympy.Piecewise((1-sympy.exp(-x), sympy.Gt(x, 0)), (-1+sympy.exp(x), True))
+AD1 = sympy.integrate(f, x)
+AD2 = sympy.integrate(AD1, x)
+
+f_out = lambdify(x, f, 'numpy')(x_in)
+AD1_out = lambdify(x, AD1, 'numpy')(x_in)
+AD2_out = lambdify(x, AD2, 'numpy')(x_in)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(f)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+#| fig-align: center
+plt.plot(x_in, f_out, label="f")
+plt.plot(x_in, AD1_out, label="AD1")
+plt.plot(x_in, AD2_out, label="AD2")
+plt.grid()
+plt.legend()
+plt.show()
+```
+
 ### Hard-Clipper
 
 ```{python}
@@ -158,47 +308,6 @@ plt.legend()
 plt.show()
 ```
 
-### Tanh-Clipper
-
-```{python}
-#| echo: false
-f = sympy.tanh(x)
-AD1 = sympy.integrate(f, x)
-AD2 = sympy.integrate(AD1, x)
-
-f_out = lambdify(x, f, 'numpy')(x_in)
-AD1_out = lambdify(x, AD1, 'numpy')(x_in)
-# AD2_out = lambdify(x, AD2, 'numpy')(x_in)
-```
-
-```{python}
-#| echo: false
-#| fig-align: center
-plt.plot(x_in, f_out, label="f")
-plt.plot(x_in, AD1_out, label="AD1")
-# plt.plot(x_in, AD2_out, label="AD2")
-plt.grid()
-plt.legend()
-plt.show()
-```
-
-```{python}
-#| echo: false
-display_latex(f"$${sympy.latex(f)}$$", raw=True)
-```
-
-```{python}
-#| echo: false
-display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
-```
-
-```{python}
-#| echo: false
-display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
-```
-
-
-
 ### Sine-Clipper
 
 ```{python}
@@ -238,18 +347,29 @@ plt.legend()
 plt.show()
 ```
 
-### Full-Wave Rectifier
 
+### Tanh-Clipper
 
 ```{python}
 #| echo: false
-f = sympy.Abs(x)
+f = sympy.tanh(x)
 AD1 = sympy.integrate(f, x)
 AD2 = sympy.integrate(AD1, x)
 
 f_out = lambdify(x, f, 'numpy')(x_in)
 AD1_out = lambdify(x, AD1, 'numpy')(x_in)
-AD2_out = lambdify(x, AD2, 'numpy')(x_in)
+# AD2_out = lambdify(x, AD2, 'numpy')(x_in)
+```
+
+```{python}
+#| echo: false
+#| fig-align: center
+plt.plot(x_in, f_out, label="f")
+plt.plot(x_in, AD1_out, label="AD1")
+# plt.plot(x_in, AD2_out, label="AD2")
+plt.grid()
+plt.legend()
+plt.show()
 ```
 
 ```{python}
@@ -265,57 +385,6 @@ display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
 ```{python}
 #| echo: false
 display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
-```
-
-```{python}
-#| echo: false
-#| fig-align: center
-plt.plot(x_in, f_out, label="f")
-plt.plot(x_in, AD1_out, label="AD1")
-plt.plot(x_in, AD2_out, label="AD2")
-plt.grid()
-plt.legend()
-plt.show()
-```
-
-### Half-Wave Rectifier
-
-
-```{python}
-#| echo: false
-f = sympy.Piecewise((x, sympy.Gt(x, 0)), (0, True))
-AD1 = sympy.integrate(f, x)
-AD2 = sympy.integrate(AD1, x)
-
-f_out = lambdify(x, f, 'numpy')(x_in)
-AD1_out = lambdify(x, AD1, 'numpy')(x_in)
-AD2_out = lambdify(x, AD2, 'numpy')(x_in)
-```
-
-```{python}
-#| echo: false
-display_latex(f"$${sympy.latex(f)}$$", raw=True)
-```
-
-```{python}
-#| echo: false
-display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
-```
-
-```{python}
-#| echo: false
-display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
-```
-
-```{python}
-#| echo: false
-#| fig-align: center
-plt.plot(x_in, f_out, label="f")
-plt.plot(x_in, AD1_out, label="AD1")
-plt.plot(x_in, AD2_out, label="AD2")
-plt.grid()
-plt.legend()
-plt.show()
 ```
 
 ### Overdrive
@@ -360,3 +429,109 @@ plt.grid()
 plt.legend()
 plt.show()
 ```
+
+### Chebyshev Polynomials
+
+- <http://sites.music.columbia.edu/cmc/MusicAndComputers/chapter4/04_06.php>
+- <https://dsp.stackexchange.com/questions/26411/possibilties-of-chebyshev-polynomial-waveshaping>
+- <https://en.wikipedia.org/wiki/Chebyshev_polynomials#Examples>
+
+```{python}
+#| echo: false
+f = 16*x**5 - 20*x**3 + 5*x
+AD1 = sympy.integrate(f, x)
+AD2 = sympy.integrate(AD1, x)
+
+x_in = np.linspace(-1.001, 1.001, 512)
+f_out = lambdify(x, f, 'numpy')(x_in)
+AD1_out = lambdify(x, AD1, 'numpy')(x_in)
+AD2_out = lambdify(x, AD2, 'numpy')(x_in)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(f)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+#| fig-align: center
+plt.plot(x_in, f_out, label="f")
+plt.plot(x_in, AD1_out, label="AD1")
+plt.plot(x_in, AD2_out, label="AD2")
+plt.grid()
+plt.legend()
+plt.show()
+```
+
+## Antiderivative Anti-Aliasing
+
+```python
+class ADAA1:
+    def __init__(self, f, AD1, TOL=1.0e-5):
+        self.TOL = TOL
+        self.f = f
+        self.AD1 = AD1
+
+    def process(self, x):
+        y = np.copy(x)
+        x1 = 0.0
+        for n, _ in enumerate(x):
+            if np.abs(x[n] - x1) < self.TOL:  # fallback
+                y[n] = self.f((x[n] + x1) / 2)
+            else:
+                y[n] = (self.AD1(x[n]) - self.AD1(x1)) / (x[n] - x1)
+            x1 = x[n]
+        return y
+```
+
+```python
+class ADAA2:
+    def __init__(self, f, AD1, AD2, TOL=1.0e-5):
+        self.TOL = TOL
+        self.f = f
+        self.AD1 = AD1
+        self.AD2 = AD2
+
+    def process(self, x):
+        y = np.copy(x)
+
+        def calcD(x0, x1):
+            if np.abs(x0 - x1) < self.TOL:
+                return self.AD1((x0 + x1) / 2.0)
+            return (self.AD2(x0) - self.AD2(x1)) / (x0 - x1)
+
+        def fallback(x0, x2):
+            x_bar = (x0 + x2) / 2.0
+            delta = x_bar - x0
+
+            if delta < self.TOL:
+                return self.f((x_bar + x0) / 2.0)
+            return (2.0 / delta) * (self.AD1(x_bar) + (self.AD2(x0) - self.AD2(x_bar)) / delta)
+
+        x1 = 0.0
+        x2 = 0.0
+        for n, _ in enumerate(x):
+            if np.abs(x[n] - x1) < self.TOL:  # fallback
+                y[n] = fallback(x[n], x2)
+            else:
+                y[n] = (2.0 / (x[n] - x2)) * (calcD(x[n], x1) - calcD(x1, x2))
+            x2 = x1
+            x1 = x[n]
+        return y
+```
+
+- <https://ccrma.stanford.edu/~jatin/Notebooks/adaa.html>
+- <https://github.com/jatinchowdhury18/ADAA>
+- <https://github.com/jatinchowdhury18/audio_dspy/blob/master/audio_dspy/nonlinearities.py>
+- [ARBITRARY-ORDER IIR ANTIDERIVATIVE ANTIALIASING](https://www.dafx.de/paper-archive/2021/proceedings/papers/DAFx20in21_paper_27.pdf)

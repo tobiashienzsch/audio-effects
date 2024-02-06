@@ -56,6 +56,19 @@ class ADAA2:
         return y
 
 
+def plot_aliasing(ax, title, freqs_ref, fft_ref, freqs_alias, fft_alias, peaks):
+    ax.plot(freqs_ref, fft_ref, '--', c='orange', label='Analog')
+    ax.plot(freqs_alias, fft_alias, c='blue', label=title)
+    ax.scatter(freqs_ref[peaks], fft_analog[peaks], c='r', marker='x')
+    ax.set_title(title)
+    ax.set_xlabel('Frequency [Hz]')
+    ax.set_ylabel('Magnitude [dB]')
+    ax.set_xlim(0, 20000)
+    ax.set_ylim(5)
+    ax.legend()
+    ax.grid()
+
+
 def plot_fft(x, fs, sm=1.0/24.0):
     fft = 20 * np.log10(np.abs(np.fft.rfft(x) + 1.0e-9))
     freqs = np.fft.rfftfreq(len(x), 1.0 / fs)
@@ -73,6 +86,42 @@ def process_nonlin(fc, FS, nonlin, gain=10):
 def signum(x):
     return np.where(x > 0, +1, np.where(x < 0, -1, 0))
     # return int(0 < x) - int(x < 0)
+
+
+def softClip3(x):
+    return -4*x**3/27 + x
+
+
+def softClip3AD1(x):
+    return -x**4/27 + x**2/2
+
+
+def softClip3AD2(x):
+    return -x**5/135 + x**3/6
+
+
+def softClip5(x):
+    return -((256*x**5)/3125)+x
+
+
+def softClip5AD1(x):
+    return -((128*x**6)/9375)+((x**2)/2)
+
+
+def softClip5AD2(x):
+    return -((128*x**7)/65625) + ((x**3)/6)
+
+
+def softClipExp(x):
+    return np.where(x > 0, 1-np.exp(-x), np.exp(x)-1)
+
+
+def softClipExpAD1(x):
+    return np.where(x <= 0, -x + np.exp(x), x + np.exp(-x))
+
+
+def softClipExpAD2(x):
+    return np.where(x <= 0, (x**2) * -0.5 + np.exp(x), (x**2) * 0.5 - np.exp(-x)+2)
 
 
 def hardClip(x):
@@ -95,49 +144,122 @@ def tanhClipAD1(x):
     return x - np.log(np.tanh(x) + 1)
 
 
-def softClip(x):
-    return -4*x**3/27 + x
+def sineClip(x):
+    return -np.sin(x*np.pi*0.5)
 
 
-def softClipAD1(x):
-    return -x**4/27 + x**2/2
+def sineClipAD1(x):
+    return 2*np.cos(x*np.pi*0.5)/np.pi
 
 
-def overdrive(x):
-    return np.where(
-        (x > 0) & (x < 1/3), 2*x*signum(x),
-        np.where(
-            (x >= 1/3) & (x <= 2/3), ((3-(2-3*x)**2)/3)*signum(x), 1*signum(x)
-        )
-    )
+def sineClipAD2(x):
+    return 4*np.sin(x*np.pi*0.5)/(np.pi**2)
+
+
+def halfWave(x):
+    return np.where((x > 0), x, 0)
+
+
+def halfWaveAD1(x):
+    return np.where((x <= 0), 0, (x**2)/2)
+
+
+def halfWaveAD2(x):
+    return np.where((x <= 0), 0, (x**3)/6)
+
+
+def fullWave(x):
+    return np.abs(x)
+
+
+def fullWaveAD1(x):
+    return np.where((x <= 0), (x**2)/-2, (x**2)/2)
+
+
+def fullWaveAD2(x):
+    return np.where((x <= 0), (x**3)/-6, (x**3)/6)
+
+
+def diode(x):
+    return 0.2 * (np.exp(1.79*x) - 1.0)
+
+
+def diodeAD1(x):
+    return -0.2*x + 0.111731843575419*np.exp(1.79*x)
+
+
+def diodeAD2(x):
+    return -0.1*x**2 + 0.0624200243438095*np.exp(1.79*x)
+
+
+def chebyshevPolynomial(x):
+    return 16*x**5 - 20*x**3 + 5*x
+
+
+def chebyshevPolynomialAD1(x):
+    return (8*x**6)/3 - 5*x**4 + (5*x**2)*0.5
+
+
+def chebyshevPolynomialAD2(x):
+    return (8*x**7)/21 - x**5 + (5*x**3)/6
 
 
 FC = 1244.5
 FS = 44100
 OS = 16
 
-# overdrive_ADAA1 = ADAA1(overdrive, overdriveAD1, 1.0e-5)
-# overdrive_ADAA2 = ADAA2(overdrive, overdriveAD1, overdriveAD2, 1.0e-5)
+distortion = "Soft-Clip (5th Degree)"
+distortion = "Soft-Clip Exponential"
+distortion = "Chebyshev Polynomial"
+distortion = "Diode"
+distortion = "Hard-Clip"
+distortion = "Full-Wave Rectifier"
 
-freqs_analog, fft_analog = process_nonlin(FC, FS*100, overdrive)
-freqs_alias, fft_alias = process_nonlin(FC, FS, overdrive)
-freqs_os, fft_os = process_nonlin(FC, FS*OS, overdrive)
-# freqs_ad1, fft_ad1 = process_nonlin(FC, FS*OS, overdrive_ADAA1.process)
-# freqs_ad2, fft_ad2 = process_nonlin(FC, FS*OS, overdrive_ADAA2.process)
+fullWave_ADAA1 = ADAA1(fullWave, fullWaveAD1, 1.0e-5)
+fullWave_ADAA2 = ADAA2(fullWave, fullWaveAD1, fullWaveAD2, 1.0e-5)
+
+freqs_analog, fft_analog = process_nonlin(FC, FS*50, fullWave)
 peak_idxs = signal.find_peaks(fft_analog, 65)[0]
 
-plt.plot(freqs_analog, fft_analog, '--', c='red', label='Analog')
-# plt.plot(freqs_alias, fft_alias, '--', c='green', label='No ADAA')
-plt.plot(freqs_os, fft_os, '--', c='blue', label=f'OS{OS}')
-# plt.plot(freqs_ad1, fft_ad1, 'green', label=f'ADAA1 + OS{OS}')
-# plt.plot(freqs_ad2, fft_ad2, 'blue', label=f'ADAA2 + OS{OS}')
-plt.legend()
-plt.scatter(freqs_analog[peak_idxs], fft_analog[peak_idxs], c='r', marker='x')
-plt.xlim(0, 20000)
-plt.ylim(5)
-plt.title('Hard Clipping Distortion')
-plt.ylabel('Magnitude [dB]')
-plt.xlabel('Frequency [Hz]')
-plt.grid()
+freqs_alias, fft_alias = process_nonlin(FC, FS, fullWave)
+freqs_os, fft_os = process_nonlin(FC, FS*OS, fullWave)
+
+freqs_ad1, fft_ad1 = process_nonlin(FC, FS, fullWave_ADAA1.process)
+freqs_ad1os, fft_ad1os = process_nonlin(FC, FS*OS, fullWave_ADAA1.process)
+
+freqs_ad2, fft_ad2 = process_nonlin(FC, FS, fullWave_ADAA2.process)
+freqs_ad2os, fft_ad2os = process_nonlin(FC, FS*OS, fullWave_ADAA2.process)
+
+fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(
+    3, 2,
+    constrained_layout=True
+)
+
+fig.suptitle(distortion)
+
+# TOP-LEFT
+plot_aliasing(ax1, "OS1", freqs_analog, fft_analog,
+              freqs_alias, fft_alias, peak_idxs)
+
+# TOP-RIGHT
+plot_aliasing(ax2, f"OS{OS}", freqs_analog,
+              fft_analog, freqs_os, fft_os, peak_idxs)
+
+# MID-LEFT
+plot_aliasing(ax3, f"ADAA1", freqs_analog,
+              fft_analog, freqs_ad1, fft_ad1, peak_idxs)
+
+# MID-RIGHT
+plot_aliasing(ax4, f"ADAA1 + OS{OS}", freqs_analog,
+              fft_analog, freqs_ad1os, fft_ad1os, peak_idxs)
+
+# BOTTOM-LEFT
+plot_aliasing(ax5, f"ADAA2", freqs_analog,
+              fft_analog, freqs_ad2, fft_ad2, peak_idxs)
+
+# BOTTOM-RIGHT
+plot_aliasing(ax6, f"ADAA2 + OS{OS}", freqs_analog,
+              fft_analog, freqs_ad2os, fft_ad2os, peak_idxs)
+
 
 plt.show()

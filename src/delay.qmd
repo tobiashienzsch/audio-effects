@@ -1,5 +1,7 @@
 # Delay
 
+## Feedback Delay
+
 ## Ping-Pong Delay
 
 In a true ping-pong delay effect, the delay times for the left and right channels are different, and the delayed sound bounces back and forth between the channels, creating a sense of movement.
