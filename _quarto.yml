@@ -33,3 +33,5 @@ format:
     documentclass: scrreprt
     colorlinks: true
     papersize: a4
+    lot: true
+    lof: true
