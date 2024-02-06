@@ -2,6 +2,91 @@
 
 ## Envelope Follower
 
+An envelope follower is a device or algorithm used to track the amplitude envelope of an signal over time. Think of it as a tool that measures how loud or quiet a sound is at any given moment.
+
+Here's how it typically works:
+
+1. **Signal Input:** The envelope follower takes in an signal as input. This could be a microphone picking up sound, a recorded track, or any other source of audio.
+2. **Envelope Detection:** The device or algorithm analyzes the input signal to detect changes in its amplitude or volume. It focuses on the overall shape or contour of the sound rather than the specific frequencies.
+3. **Output Control:** The envelope follower generates a control signal that reflects the changes in the input signal's amplitude. This control signal can then be used to modulate other parameters, such as the volume of another signal, the cutoff frequency of a filter, or the intensity of an effect.
+
+Envelope followers are commonly used in audio processing, synthesis, and effects applications. For example, they're often employed in dynamic effects like compression or gating, where the level of one audio signal is controlled by the envelope of another. They can also be used creatively in synthesis to modulate parameters like filter cutoff or oscillator pitch, adding dynamic movement to sounds.
+
+```{python}
+#| lst-label: lst-env-follower-python
+#| lst-cap: Enveloper Follower in Python
+import numpy as np
+
+class EnvelopeFollower:
+    def __init__(self, attack, release, target, sr):
+        self.attack = attack
+        self.release = release
+        self.target = target
+        self.sr = sr
+
+    def process(self, x):
+        target = np.log(self.target)
+        attack = np.exp(target / (self.attack * self.sr * 0.001))
+        release = np.exp(target / (self.release * self.sr * 0.001))
+
+        y = np.copy(x)
+        state = 0.0
+        for n, _ in enumerate(x):
+            env = np.abs(y[n])
+            coef = attack if env > state else release
+            state = coef * (state - env) + env
+            y[n] = state
+        return y
+```
+```{python}
+#| echo: false
+#| fig-cap: "Envelope Follower Output (Target 0.01 / -40dB)"
+import matplotlib.pyplot as plt
+
+def to_db(x):
+    offset = 1e-9
+    return 20*np.log10(x+offset)
+
+
+sr = 44100
+f = 0.01
+t = np.linspace(0, 1, sr)
+sig = np.zeros(sr)
+sig[sr//10:sr//10+sr//5] = 1
+
+fig, ((ax1, ax2),(ax3, ax4)) = plt.subplots(2, 2, constrained_layout=True)
+
+ax1.plot(t, sig, label="Trigger")
+ax1.plot(t, EnvelopeFollower(50, 500, f, sr).process(sig))
+ax1.grid(which="major", linewidth=1)
+ax1.grid(which="minor", linewidth=0.2)
+ax1.set_title("Attack 50 ms, Release 500ms")
+# ax1.minorticks_on()
+
+ax2.plot(t, to_db(sig), label="Trigger")
+ax2.plot(t, to_db(EnvelopeFollower(50, 500, f, sr).process(sig)))
+ax2.grid(which="major", linewidth=1)
+ax2.grid(which="minor", linewidth=0.2)
+ax2.set_title("Attack 50 ms, Release 500ms")
+# ax2.minorticks_on()
+
+ax3.plot(t, sig, label="Trigger")
+ax3.plot(t, EnvelopeFollower(150, 50, f, sr).process(sig))
+ax3.grid(which="major", linewidth=1)
+ax3.grid(which="minor", linewidth=0.2)
+ax3.set_title("Attack 150 ms, Release 50ms")
+# ax3.minorticks_on()
+
+ax4.plot(t, to_db(sig), label="Trigger")
+ax4.plot(t, to_db(EnvelopeFollower(100, 50, f, sr).process(sig)))
+ax4.grid(which="major", linewidth=1)
+ax4.grid(which="minor", linewidth=0.2)
+ax4.set_title("Attack 100 ms, Release 50ms")
+# ax4.minorticks_on()
+
+plt.show()
+```
+
 ## Compressor
 
 ## Limiter
@@ -16,7 +101,9 @@ There are a number of different approaches that can be used to implement an audi
 
 Here is an example of how an audio transient shaper effect could be implemented in Python using the NumPy library:
 
-```py
+```{python}
+#| lst-label: lst-transient-shaper-python
+#| lst-cap: Transient Shaper in Python
 import numpy as np
 
 def transient_shaper(audio, curve, threshold=0.1, ratio=2.0, attack=5, release=50):
@@ -38,7 +125,7 @@ def transient_shaper(audio, curve, threshold=0.1, ratio=2.0, attack=5, release=5
 # Example usage: apply a transient shaper curve to an audio signal
 audio = np.random.random(44100)  # generate a random audio signal
 curve = np.linspace(0, 2, 100)  # create a linear transient shaper curve
-audio = transient_shaper(audio, curve)  # apply the transient shaper to the audio
+#audio = transient_shaper(audio, curve)  # apply the transient shaper to the audio
 ```
 
 This example defines a function transient_shaper that takes an audio signal and a transient shaper curve as inputs, and applies gain modification to the transients in the signal based on the curve. The function first uses a compressor to detect the transients in the signal, and then applies gain modification to the transients based on the curve. The curve can be specified by the user and can take any form, such as a linear curve or a more complex curve with multiple segments.
