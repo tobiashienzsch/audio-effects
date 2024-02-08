@@ -13,11 +13,11 @@ Here's how it typically works:
 Envelope followers are commonly used in audio processing, synthesis, and effects applications. For example, they're often employed in dynamic effects like compression or gating, where the level of one audio signal is controlled by the envelope of another. They can also be used creatively in synthesis to modulate parameters like filter cutoff or oscillator pitch, adding dynamic movement to sounds.
 
 ```{python}
-#| lst-label: lst-env-follower-python
-#| lst-cap: Enveloper Follower in Python
+#| lst-label: lst-peak-env-follower-python
+#| lst-cap: Peak Enveloper Follower in Python
 import numpy as np
 
-class EnvelopeFollower:
+class PeakEnvelopeFollower:
     def __init__(self, attack, release, target, sr):
         self.attack = attack
         self.release = release
@@ -30,12 +30,12 @@ class EnvelopeFollower:
         release = np.exp(target / (self.release * self.sr * 0.001))
 
         y = np.copy(x)
-        state = 0.0
+        ym1 = 0.0
         for n, _ in enumerate(x):
             env = np.abs(y[n])
-            coef = attack if env > state else release
-            state = coef * (state - env) + env
-            y[n] = state
+            coef = attack if env > ym1 else release
+            ym1 = coef * (ym1 - env) + env
+            y[n] = ym1
         return y
 ```
 ```{python}
@@ -60,25 +60,25 @@ sig[0:(sr//10)*2] = 1
 fig, ((ax1, ax2),(ax3, ax4)) = plt.subplots(2, 2, constrained_layout=True)
 
 ax1.plot(t, sig, "k:")
-ax1.plot(t, EnvelopeFollower(50, 600, target, sr).process(sig), "k-")
+ax1.plot(t, PeakEnvelopeFollower(100, 600, target, sr).process(sig), "k-")
 ax1.grid(which="major", linewidth=1)
 ax1.grid(which="minor", linewidth=0.2)
 ax1.tick_params(axis='x', labelsize="small")
 ax1.tick_params(axis='y', labelsize="small")
-ax1.set_title("Attack 50 ms, Release 600ms", fontsize="small")
+ax1.set_title("Attack 100 ms, Release 600ms", fontsize="small")
 # ax1.minorticks_on()
 
 ax2.plot(t, to_db(sig), "k:")
-ax2.plot(t, to_db(EnvelopeFollower(50, 600, target, sr).process(sig)), "k-")
+ax2.plot(t, to_db(PeakEnvelopeFollower(100, 600, target, sr).process(sig)), "k-")
 ax2.grid(which="major", linewidth=1)
 ax2.grid(which="minor", linewidth=0.2)
 ax2.tick_params(axis='x', labelsize="small")
 ax2.tick_params(axis='y', labelsize="small")
-ax2.set_title("Attack 50 ms, Release 600ms", fontsize="small")
+ax2.set_title("Attack 100 ms, Release 600ms", fontsize="small")
 # ax2.minorticks_on()
 
 ax3.plot(t, sig, "k:")
-ax3.plot(t, EnvelopeFollower(200, 200, target, sr).process(sig), "k-")
+ax3.plot(t, PeakEnvelopeFollower(200, 200, target, sr).process(sig), "k-")
 ax3.grid(which="major", linewidth=1)
 ax3.grid(which="minor", linewidth=0.2)
 ax3.tick_params(axis='x', labelsize="small")
@@ -87,7 +87,7 @@ ax3.set_title("Attack 200 ms, Release 200ms", fontsize="small")
 # ax3.minorticks_on()
 
 ax4.plot(t, to_db(sig), "k:")
-ax4.plot(t, to_db(EnvelopeFollower(200, 200, target, sr).process(sig)), "k-")
+ax4.plot(t, to_db(PeakEnvelopeFollower(200, 200, target, sr).process(sig)), "k-")
 ax4.grid(which="major", linewidth=1)
 ax4.grid(which="minor", linewidth=0.2)
 ax4.tick_params(axis='x', labelsize="small")
@@ -178,30 +178,32 @@ Here is an example of how an audio transient shaper effect could be implemented 
 ```{python}
 #| lst-label: lst-transient-shaper-python
 #| lst-cap: Transient Shaper in Python
-import numpy as np
+class TransientShaper:
+    def __init__(self, intensity, fs) -> None:
+        self.intensity = intensity
 
-def transient_shaper(audio, curve, threshold=0.1, ratio=2.0, attack=5, release=50):
-  # Create an envelope follower using a compressor
-  envelope = np.zeros(len(audio))
-  for i in range(1, len(audio)):
-    if abs(audio[i]) > envelope[i-1]:
-      envelope[i] = attack * (abs(audio[i]) - envelope[i-1]) + envelope[i-1]
-    else:
-      envelope[i] = release * (abs(audio[i]) - envelope[i-1]) + envelope[i-1]
+        self.attack1 = PeakEnvelopeFollower(00.1, 1000.0, 0.01, fs)
+        self.attack2 = PeakEnvelopeFollower(50.0, 1000.0, 0.01, fs)
 
-  # Apply gain modification to the transients based on the curve
-  for i in range(len(audio)):
-    if envelope[i] > threshold:
-      audio[i] *= curve[int(envelope[i] * len(curve))]
+        sustain = 1000.0 * intensity
+        self.sustain1 = PeakEnvelopeFollower(1.0, sustain, 0.01, fs)
+        self.sustain2 = PeakEnvelopeFollower(1.0, sustain/20.0, 0.01, fs)
 
-  return audio
+    def process(self, x):
+        x_abs = np.abs(x)
 
-# Example usage: apply a transient shaper curve to an audio signal
-audio = np.random.random(44100)  # generate a random audio signal
-curve = np.linspace(0, 2, 100)  # create a linear transient shaper curve
-#audio = transient_shaper(audio, curve)  # apply the transient shaper to the audio
+        aenv1 = 20*np.log10(self.attack1.process(x_abs)+1e-9)
+        aenv2 = 20*np.log10(self.attack2.process(x_abs)+1e-9)
+        adiff = np.clip((aenv1-aenv2)*self.intensity, -60.0, +60.0)
+        again = 10.0**(adiff/20.0)
+
+        senv1 = 20*np.log10(self.sustain1.process(x_abs)+1e-9)
+        senv2 = 20*np.log10(self.sustain2.process(x_abs)+1e-9)
+        sdiff = (senv1-senv2)*self.intensity
+        sgain = 10.0**(sdiff/20.0)
+
+        return np.copy(x)*(again*sgain)
 ```
 
-This example defines a function transient_shaper that takes an audio signal and a transient shaper curve as inputs, and applies gain modification to the transients in the signal based on the curve. The function first uses a compressor to detect the transients in the signal, and then applies gain modification to the transients based on the curve. The curve can be specified by the user and can take any form, such as a linear curve or a more complex curve with multiple segments.
-
-Keep in mind that this is just one way to implement an audio transient shaper effect, and there are other approaches that may be more suitable for different applications. The specific implementation will depend on the desired behavior and characteristics of the effect.
+- [SPL Transient Designer Manual](https://spl.audio/wp-content/uploads/transient_designer_2_9946_manual.pdf)
+- [Audio Toolkit: Anatomy of a transient shaper](https://blog.audio-tk.com/2015/06/30/audio-toolkit-anatomy-of-a-transient-shaper)
