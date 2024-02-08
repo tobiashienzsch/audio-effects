@@ -206,29 +206,30 @@ def chebyshevPolynomialAD2(x):
 
 FC = 1244.5
 FS = 44100
-OS = 16
+OS = 2
 
-distortion = "Soft-Clip (5th Degree)"
 distortion = "Soft-Clip Exponential"
 distortion = "Chebyshev Polynomial"
 distortion = "Diode"
-distortion = "Hard-Clip"
 distortion = "Full-Wave Rectifier"
+distortion = "Soft-Clip (5th Degree)"
+distortion = "Tanh-Clip"
+distortion = "Hard-Clip"
 
-fullWave_ADAA1 = ADAA1(fullWave, fullWaveAD1, 1.0e-5)
-fullWave_ADAA2 = ADAA2(fullWave, fullWaveAD1, fullWaveAD2, 1.0e-5)
+hardClip_ADAA1 = ADAA1(hardClip, hardClipAD1, 1.0e-5)
+hardClip_ADAA2 = ADAA2(hardClip, hardClipAD1, hardClipAD1, 1.0e-5)
 
-freqs_analog, fft_analog = process_nonlin(FC, FS*50, fullWave)
+freqs_analog, fft_analog = process_nonlin(FC, FS*50, hardClip)
 peak_idxs = signal.find_peaks(fft_analog, 65)[0]
 
-freqs_alias, fft_alias = process_nonlin(FC, FS, fullWave)
-freqs_os, fft_os = process_nonlin(FC, FS*OS, fullWave)
+freqs_alias, fft_alias = process_nonlin(FC, FS, hardClip)
+freqs_os, fft_os = process_nonlin(FC, FS*OS, hardClip)
 
-freqs_ad1, fft_ad1 = process_nonlin(FC, FS, fullWave_ADAA1.process)
-freqs_ad1os, fft_ad1os = process_nonlin(FC, FS*OS, fullWave_ADAA1.process)
+freqs_ad1, fft_ad1 = process_nonlin(FC, FS, hardClip_ADAA1.process)
+freqs_ad1os, fft_ad1os = process_nonlin(FC, FS*OS, hardClip_ADAA1.process)
 
-freqs_ad2, fft_ad2 = process_nonlin(FC, FS, fullWave_ADAA2.process)
-freqs_ad2os, fft_ad2os = process_nonlin(FC, FS*OS, fullWave_ADAA2.process)
+freqs_ad2, fft_ad2 = process_nonlin(FC, FS, hardClip_ADAA2.process)
+freqs_ad2os, fft_ad2os = process_nonlin(FC, FS*OS, hardClip_ADAA2.process)
 
 fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(
     3, 2,

@@ -1,33 +1,47 @@
 # Testing
 
+```{python}
+#| echo: false
+import numpy as np
+```
+
+
 There are several ways to test whether two audio DSP algorithm implementations produce the same results. Here are a few options, along with Python examples:
 
 - Relative error: This measures the relative difference between the two outputs. It is calculated as the absolute value of the difference between the two outputs, divided by the absolute value of the reference output. For example:
 
-```py
-def relative_error(output1, output2, reference):
-    return abs(output1 - output2) / abs(reference)
+```{python}
+#| lst-label: lst-rel-error-python
+#| lst-cap: Relative Error
+def relative_error(lhs, rhs, ref):
+    return abs(lhs - rhs) / abs(ref)
 ```
 
 - Root mean squared (RMS) error: This measures the average magnitude of the difference between the two outputs. It is calculated as the square root of the mean of the squares of the differences between the two outputs. For example:
 
-```py
-def rms_error(output1, output2):
-    return np.sqrt(np.mean((output1 - output2) ** 2))
+```{python}
+#| lst-label: lst-rms-error-python
+#| lst-cap: RMS Error
+def rms_error(lhs, rhs):
+    return np.sqrt(np.mean((lhs - rhs)**2))
 ```
 
 - Peak signal-to-noise ratio (PSNR): This measures the ratio of the peak power of the reference output to the power of the noise in the difference between the two outputs. It is calculated as the logarithm (base 10) of the ratio of the peak power of the reference output to the mean squared error between the two outputs. For example:
 
-```py
-def psnr(output1, output2, reference):
-    return 10 * np.log10(np.max(reference) ** 2 / np.mean((output1 - output2) ** 2))
+```{python}
+#| lst-label: lst-psnr-python
+#| lst-cap: Peak signal-to-noise ratio
+def psnr(lhs, rhs, ref):
+    return 10 * np.log10(np.max(ref)**2 / np.mean((lhs - rhs)**2))
 ```
 
 - Signal-to-noise ratio (SNR): This measures the ratio of the power of the reference output to the power of the noise in the difference between the two outputs. It is calculated as the ratio of the mean squared value of the reference output to the mean squared error between the two outputs. For example:
 
-```py
-def snr(output1, output2, reference):
-    return np.mean(reference ** 2) / np.mean((output1 - output2) ** 2)
+```{python}
+#| lst-label: lst-snr-python
+#| lst-cap: Signal-to-noise ratio
+def snr(lhs, rhs, ref):
+    return np.mean(ref**2) / np.mean((lhs - rhs)**2)
 ```
 
 The threshold for relative error, RMS error, PSNR, and SNR depends on the application and the desired level of accuracy. In general, a lower threshold indicates a higher level of accuracy, but also requires more computational resources.

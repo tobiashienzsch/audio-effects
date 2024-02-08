@@ -52,9 +52,9 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, label="f")
-plt.plot(x_in, AD1_out, label="AD1")
-plt.plot(x_in, AD2_out, label="AD2")
+plt.plot(x_in, f_out, "k-", label="f")
+plt.plot(x_in, AD1_out, "k--", label="AD1")
+plt.plot(x_in, AD2_out, "k:", label="AD2")
 plt.grid()
 plt.legend()
 plt.show()
@@ -91,9 +91,9 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, label="f")
-plt.plot(x_in, AD1_out, label="AD1")
-plt.plot(x_in, AD2_out, label="AD2")
+plt.plot(x_in, f_out, "k-", label="f")
+plt.plot(x_in, AD1_out, "k--", label="AD1")
+plt.plot(x_in, AD2_out, "k:", label="AD2")
 plt.grid()
 plt.legend()
 plt.show()
@@ -130,9 +130,9 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, label="f")
-plt.plot(x_in, AD1_out, label="AD1")
-plt.plot(x_in, AD2_out, label="AD2")
+plt.plot(x_in, f_out, "k-", label="f")
+plt.plot(x_in, AD1_out, "k--", label="AD1")
+plt.plot(x_in, AD2_out, "k:", label="AD2")
 plt.grid()
 plt.legend()
 plt.show()
@@ -174,9 +174,9 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, label="f")
-plt.plot(x_in, AD1_out, label="AD1")
-plt.plot(x_in, AD2_out, label="AD2")
+plt.plot(x_in, f_out, "k-", label="f")
+plt.plot(x_in, AD1_out, "k--", label="AD1")
+plt.plot(x_in, AD2_out, "k:", label="AD2")
 plt.grid()
 plt.legend()
 plt.show()
@@ -219,9 +219,9 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, label="f")
-plt.plot(x_in, AD1_out, label="AD1")
-plt.plot(x_in, AD2_out, label="AD2")
+plt.plot(x_in, f_out, "k-", label="f")
+plt.plot(x_in, AD1_out, "k--", label="AD1")
+plt.plot(x_in, AD2_out, "k:", label="AD2")
 plt.grid()
 plt.legend()
 plt.show()
@@ -258,9 +258,9 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, label="f")
-plt.plot(x_in, AD1_out, label="AD1")
-plt.plot(x_in, AD2_out, label="AD2")
+plt.plot(x_in, f_out, "k-", label="f")
+plt.plot(x_in, AD1_out, "k--", label="AD1")
+plt.plot(x_in, AD2_out, "k:", label="AD2")
 plt.grid()
 plt.legend()
 plt.show()
@@ -301,9 +301,9 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, label="f")
-plt.plot(x_in, AD1_out, label="AD1")
-plt.plot(x_in, AD2_out, label="AD2")
+plt.plot(x_in, f_out, "k-", label="f")
+plt.plot(x_in, AD1_out, "k--", label="AD1")
+plt.plot(x_in, AD2_out, "k:", label="AD2")
 plt.grid()
 plt.legend()
 plt.show()
@@ -340,9 +340,9 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, label="f")
-plt.plot(x_in, AD1_out, label="AD1")
-plt.plot(x_in, AD2_out, label="AD2")
+plt.plot(x_in, f_out, "k-", label="f")
+plt.plot(x_in, AD1_out, "k--", label="AD1")
+plt.plot(x_in, AD2_out, "k:", label="AD2")
 plt.grid()
 plt.legend()
 plt.show()
@@ -423,9 +423,9 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, label="f")
-plt.plot(x_in, AD1_out, label="AD1")
-plt.plot(x_in, AD2_out, label="AD2")
+plt.plot(x_in, f_out, "k-", label="f")
+plt.plot(x_in, AD1_out, "k--", label="AD1")
+plt.plot(x_in, AD2_out, "k:", label="AD2")
 plt.grid()
 plt.legend()
 plt.show()
@@ -467,9 +467,9 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, label="f")
-plt.plot(x_in, AD1_out, label="AD1")
-plt.plot(x_in, AD2_out, label="AD2")
+plt.plot(x_in, f_out, "k-", label="f")
+plt.plot(x_in, AD1_out, "k--", label="AD1")
+plt.plot(x_in, AD2_out, "k:", label="AD2")
 plt.grid()
 plt.legend()
 plt.show()

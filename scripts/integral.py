@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sympy
 from sympy.utilities.lambdify import lambdify
+from sympy.utilities.codegen import codegen
+from sympy.codegen.rewriting import create_expand_pow_optimization, optimize, optims_c99
 
 sympy.init_printing(use_unicode=False, wrap_line=False)
 
@@ -75,8 +77,47 @@ f = sympy.Piecewise((1-sympy.exp(x), sympy.Gt(x, 0)),
                     (-1+sympy.exp(x), True))  # Soft-Clip Exp
 f = 16*x**5 - 20*x**3 + 5*x
 f = 0.2 * (sympy.exp(1.79*x) - 1.0)
+
+
+degree = sympy.Symbol("degree", integer=True, positive=True)
+one_over_degree = 1/degree
+norm_factor = (degree - 1) / degree
+inv_norm = 1 / norm_factor
+
+# degree = 27
+# one_over_degree = sympy.Rational(1, degree)
+# norm_factor = sympy.Rational(degree - 1, degree)
+# inv_norm = sympy.Rational(1, norm_factor)
+
+y = x * norm_factor
+f = (y - (y**degree) * one_over_degree)*inv_norm
 AD1 = sympy.integrate(f, x)
 AD2 = sympy.integrate(AD1, x)
-print(f)
-print(AD1)
-print(AD2)
+
+# print(f)
+# print(AD1)
+# print(AD2)
+
+expand_opt = create_expand_pow_optimization(5)
+f_opt = optimize(expand_opt(sympy.simplify(f)), optims_c99)
+AD1_opt = optimize(expand_opt(sympy.simplify(AD1)), optims_c99)
+AD2_opt = optimize(expand_opt(sympy.simplify(AD2)), optims_c99)
+
+# f_opt = f
+# AD1_opt = AD1
+# AD2_opt = AD2
+
+# print(f)
+# print(AD1)
+
+name = f"softClip"
+[(c_name, c_code), (h_name, c_header)] = codegen(
+    [(f"{name}", f_opt), (f"{name}_AD1", AD1_opt), (f"{name}_AD2", AD2_opt)],
+    "C99",
+    header=True,
+    empty=True,
+    # prefix="pprod",
+    project="PPROD",
+)
+
+print(c_code)
