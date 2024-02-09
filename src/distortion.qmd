@@ -16,20 +16,49 @@ sympy.init_printing(latex_mode='equation*', wrap_line=False)
 x = sympy.Symbol('x', real=True)
 x_in = np.linspace(-2.0, 2.0, 512)
 
+def plot_fft(x, fs, sm=1.0/24.0):
+    fft = 20 * np.log10(np.abs(np.fft.rfft(x) + 1.0e-9))
+    freqs = np.fft.rfftfreq(len(x), 1.0 / fs)
+    return freqs, fft
+
+def process_nonlin(fc, FS, nonlin, gain=10):
+    N = 200000
+    sin = np.sin(2 * np.pi * fc / FS * np.arange(N))
+    y = nonlin(gain * sin)
+    freqs, fft = plot_fft(y, FS)
+    return freqs, fft
+
 def plot_nonlinearity(f, AD1, AD2):
     f_out = lambdify(x, f, 'numpy')(x_in)
     AD1_out = lambdify(x, AD1, 'numpy')(x_in)
     if AD2 is not None:
         AD2_out = lambdify(x, AD2, 'numpy')(x_in)
 
-    plt.plot(x_in, f_out, "k-", label="f")
-    plt.plot(x_in, AD1_out, "k--", label="AD1")
-    if AD2 is not None:
-        plt.plot(x_in, AD2_out, "k:", label="AD2")
+    fig, (ax1, ax2) = plt.subplots(1, 2, tight_layout=True)
 
-    plt.grid()
-    plt.legend()
+    ax1.plot(x_in, f_out, "k-", label="f")
+    ax1.plot(x_in, AD1_out, "k--", label="AD1")
+    if AD2 is not None:
+        ax1.plot(x_in, AD2_out, "k:", label="AD2")
+    ax1.grid()
+    ax1.legend()
+
+    freqs, fft = process_nonlin(1244.5, 96000*20, lambdify(x, f, 'numpy'))
+    ax2.plot(freqs, fft, 'k-')
+    ax2.set_xlim(0, 20000)
+    ax2.set_ylim(5)
+    ax2.grid()
+
     plt.show()
+
+def plot_aliasing(ax, title, freqs_ref, fft_ref, freqs_alias, fft_alias, peaks):
+    ax.plot(freqs_ref, fft_ref, '--', c='orange', label='Analog')
+    ax.plot(freqs_alias, fft_alias, c='blue', label=title)
+    ax.scatter(freqs_ref[peaks], fft_analog[peaks], c='r', marker='x')
+    ax.set_title(title)
+    ax.set_xlim(0, 20000)
+    ax.set_ylim(5)
+    ax.grid()
 ```
 
 
@@ -38,30 +67,30 @@ def plot_nonlinearity(f, AD1, AD2):
 
 ```{python}
 #| echo: false
-f = sympy.Abs(x)
-AD1 = sympy.integrate(f, x)
-AD2 = sympy.integrate(AD1, x)
+fullWave = sympy.Abs(x)
+fullWave_AD1 = sympy.integrate(fullWave, x)
+fullWave_AD2 = sympy.integrate(fullWave_AD1, x)
 ```
 
 ```{python}
 #| echo: false
-display_latex(f"$${sympy.latex(f)}$$", raw=True)
+display_latex(f"$${sympy.latex(fullWave)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
+display_latex(f"$${sympy.latex(fullWave_AD1)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
+display_latex(f"$${sympy.latex(fullWave_AD2)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
 #| fig-align: center
-plot_nonlinearity(f, AD1, AD2)
+plot_nonlinearity(fullWave, fullWave_AD1, fullWave_AD2)
 ```
 
 ### Half-Wave Rectifier
@@ -195,6 +224,41 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 plot_nonlinearity(f, AD1, AD2)
 ```
 
+### Soft-Clipper (7rd Degree)
+
+```{python}
+#| echo: false
+degree = 7
+one_over_degree = sympy.Rational(1, degree)
+norm_factor = sympy.Rational(degree - 1, degree)
+inv_norm = sympy.Rational(1, norm_factor)
+y = x * norm_factor
+f = (y - (y**degree) * one_over_degree)*inv_norm
+AD1 = sympy.integrate(f, x)
+AD2 = sympy.integrate(AD1, x)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(f)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+#| fig-align: center
+plot_nonlinearity(f, AD1, AD2)
+```
+
 ### Soft-Clipper Exponential
 
 ```{python}
@@ -229,34 +293,34 @@ plot_nonlinearity(f, AD1, AD2)
 
 ```{python}
 #| echo: false
-f = sympy.Piecewise(
+hardClip = sympy.Piecewise(
     (-1 , sympy.Le(x, -1)),
     (1 , sympy.Ge(x, 1)),
     (x, True),
 )
-AD1 = sympy.integrate(f, x)
-AD2 = sympy.integrate(AD1, x)
+hardClip_AD1 = sympy.integrate(hardClip, x)
+hardClip_AD2 = sympy.integrate(hardClip_AD1, x)
 ```
 
 ```{python}
 #| echo: false
-display_latex(f"$${sympy.latex(f)}$$", raw=True)
+display_latex(f"$${sympy.latex(hardClip)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
+display_latex(f"$${sympy.latex(hardClip_AD1)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
-display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
+display_latex(f"$${sympy.latex(hardClip_AD2)}$$", raw=True)
 ```
 
 ```{python}
 #| echo: false
 #| fig-align: center
-plot_nonlinearity(f, AD1, AD2)
+plot_nonlinearity(hardClip, hardClip_AD1, hardClip_AD2)
 ```
 
 ### Sine-Clipper
@@ -467,153 +531,6 @@ class ADAA2:
 
 ```{python}
 #| echo: false
-def plot_aliasing(ax, title, freqs_ref, fft_ref, freqs_alias, fft_alias, peaks):
-    ax.plot(freqs_ref, fft_ref, '--', c='orange', label='Analog')
-    ax.plot(freqs_alias, fft_alias, c='blue', label=title)
-    ax.scatter(freqs_ref[peaks], fft_analog[peaks], c='r', marker='x')
-    ax.set_title(title)
-    # ax.set_xlabel('Frequency [Hz]')
-    # ax.set_ylabel('Magnitude [dB]')
-    ax.set_xlim(0, 20000)
-    ax.set_ylim(5)
-    # ax.legend()
-    ax.grid()
-
-def plot_fft(x, fs, sm=1.0/24.0):
-    fft = 20 * np.log10(np.abs(np.fft.rfft(x) + 1.0e-9))
-    freqs = np.fft.rfftfreq(len(x), 1.0 / fs)
-    return freqs, fft
-
-
-def process_nonlin(fc, FS, nonlin, gain=10):
-    N = 200000
-    sin = np.sin(2 * np.pi * fc / FS * np.arange(N))
-    y = nonlin(gain * sin)
-    freqs, fft = plot_fft(y, FS)
-    return freqs, fft
-
-
-def signum(x):
-    return np.where(x > 0, +1, np.where(x < 0, -1, 0))
-    # return int(0 < x) - int(x < 0)
-
-
-def softClip3(x):
-    return -4*x**3/27 + x
-
-
-def softClip3AD1(x):
-    return -x**4/27 + x**2/2
-
-
-def softClip3AD2(x):
-    return -x**5/135 + x**3/6
-
-
-def softClip5(x):
-    return -((256*x**5)/3125)+x
-
-
-def softClip5AD1(x):
-    return -((128*x**6)/9375)+((x**2)/2)
-
-
-def softClip5AD2(x):
-    return -((128*x**7)/65625) + ((x**3)/6)
-
-
-def softClipExp(x):
-    return np.where(x > 0, 1-np.exp(-x), np.exp(x)-1)
-
-
-def softClipExpAD1(x):
-    return np.where(x <= 0, -x + np.exp(x), x + np.exp(-x))
-
-
-def softClipExpAD2(x):
-    return np.where(x <= 0, (x**2) * -0.5 + np.exp(x), (x**2) * 0.5 - np.exp(-x)+2)
-
-
-def hardClip(x):
-    return np.where(x > 1, 1, np.where(x < -1, -1, x))
-
-
-def hardClipAD1(x):
-    return x * x / 2.0 if np.abs(x) < 1 else x * signum(x) - 0.5
-
-
-def hardClipAD2(x):
-    return x * x * x / 6.0 if np.abs(x) < 1 else ((x * x / 2.0) + (1.0 / 6.0)) * signum(x) - (x/2)
-
-
-def tanhClip(x):
-    return np.tanh(x)
-
-
-def tanhClipAD1(x):
-    return x - np.log(np.tanh(x) + 1)
-
-
-def sineClip(x):
-    return -np.sin(x*np.pi*0.5)
-
-
-def sineClipAD1(x):
-    return 2*np.cos(x*np.pi*0.5)/np.pi
-
-
-def sineClipAD2(x):
-    return 4*np.sin(x*np.pi*0.5)/(np.pi**2)
-
-
-def halfWave(x):
-    return np.where((x > 0), x, 0)
-
-
-def halfWaveAD1(x):
-    return np.where((x <= 0), 0, (x**2)/2)
-
-
-def halfWaveAD2(x):
-    return np.where((x <= 0), 0, (x**3)/6)
-
-
-def fullWave(x):
-    return np.abs(x)
-
-
-def fullWaveAD1(x):
-    return np.where((x <= 0), (x**2)/-2, (x**2)/2)
-
-
-def fullWaveAD2(x):
-    return np.where((x <= 0), (x**3)/-6, (x**3)/6)
-
-
-def diode(x):
-    return 0.2 * (np.exp(1.79*x) - 1.0)
-
-
-def diodeAD1(x):
-    return -0.2*x + 0.111731843575419*np.exp(1.79*x)
-
-
-def diodeAD2(x):
-    return -0.1*x**2 + 0.0624200243438095*np.exp(1.79*x)
-
-
-def chebyshevPolynomial(x):
-    return 16*x**5 - 20*x**3 + 5*x
-
-
-def chebyshevPolynomialAD1(x):
-    return (8*x**6)/3 - 5*x**4 + (5*x**2)*0.5
-
-
-def chebyshevPolynomialAD2(x):
-    return (8*x**7)/21 - x**5 + (5*x**3)/6
-
-
 FC = 1244.5
 FS = 44100
 OS = 2
@@ -623,14 +540,18 @@ OS = 2
 #| echo: false
 distortion = "Hard-Clip"
 
-hardClip_ADAA1 = ADAA1(hardClip, hardClipAD1, 1.0e-5)
-hardClip_ADAA2 = ADAA2(hardClip, hardClipAD1, hardClipAD2, 1.0e-5)
+f_func = lambdify(x, hardClip, 'numpy')
+AD1_func = lambdify(x, hardClip_AD1, 'numpy')
+AD2_func = lambdify(x, hardClip_AD2, 'numpy')
 
-freqs_analog, fft_analog = process_nonlin(FC, FS*50, hardClip)
+hardClip_ADAA1 = ADAA1(f_func, AD1_func, 1.0e-5)
+hardClip_ADAA2 = ADAA2(f_func, AD1_func, AD2_func, 1.0e-5)
+
+freqs_analog, fft_analog = process_nonlin(FC, FS*50, f_func)
 peak_idxs = signal.find_peaks(fft_analog, 65)[0]
 
-freqs_alias, fft_alias = process_nonlin(FC, FS, hardClip)
-freqs_os, fft_os = process_nonlin(FC, FS*OS, hardClip)
+freqs_alias, fft_alias = process_nonlin(FC, FS, f_func)
+freqs_os, fft_os = process_nonlin(FC, FS*OS, f_func)
 
 freqs_ad1, fft_ad1 = process_nonlin(FC, FS, hardClip_ADAA1.process)
 freqs_ad1os, fft_ad1os = process_nonlin(FC, FS*OS, hardClip_ADAA1.process)
@@ -682,14 +603,18 @@ plt.show()
 #| echo: false
 distortion = "Full-Wave Rectifier"
 
-fullWave_ADAA1 = ADAA1(fullWave, fullWaveAD1, 1.0e-5)
-fullWave_ADAA2 = ADAA2(fullWave, fullWaveAD1, fullWaveAD2, 1.0e-5)
+f_func = lambdify(x, fullWave, 'numpy')
+AD1_func = lambdify(x, fullWave_AD1, 'numpy')
+AD2_func = lambdify(x, fullWave_AD2, 'numpy')
 
-freqs_analog, fft_analog = process_nonlin(FC, FS*50, fullWave)
+fullWave_ADAA1 = ADAA1(f_func, AD1_func, 1.0e-5)
+fullWave_ADAA2 = ADAA2(f_func, AD1_func, AD2_func, 1.0e-5)
+
+freqs_analog, fft_analog = process_nonlin(FC, FS*50, f_func)
 peak_idxs = signal.find_peaks(fft_analog, 65)[0]
 
-freqs_alias, fft_alias = process_nonlin(FC, FS, fullWave)
-freqs_os, fft_os = process_nonlin(FC, FS*OS, fullWave)
+freqs_alias, fft_alias = process_nonlin(FC, FS, f_func)
+freqs_os, fft_os = process_nonlin(FC, FS*OS, f_func)
 
 freqs_ad1, fft_ad1 = process_nonlin(FC, FS, fullWave_ADAA1.process)
 freqs_ad1os, fft_ad1os = process_nonlin(FC, FS*OS, fullWave_ADAA1.process)
