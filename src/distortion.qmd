@@ -1,7 +1,5 @@
 # Distortion
 
-- <http://www.dangelo.audio/#research>
-
 ## Nonlinearity
 
 ```{python}
@@ -17,6 +15,21 @@ sympy.init_printing(latex_mode='equation*', wrap_line=False)
 
 x = sympy.Symbol('x', real=True)
 x_in = np.linspace(-2.0, 2.0, 512)
+
+def plot_nonlinearity(f, AD1, AD2):
+    f_out = lambdify(x, f, 'numpy')(x_in)
+    AD1_out = lambdify(x, AD1, 'numpy')(x_in)
+    if AD2 is not None:
+        AD2_out = lambdify(x, AD2, 'numpy')(x_in)
+
+    plt.plot(x_in, f_out, "k-", label="f")
+    plt.plot(x_in, AD1_out, "k--", label="AD1")
+    if AD2 is not None:
+        plt.plot(x_in, AD2_out, "k:", label="AD2")
+
+    plt.grid()
+    plt.legend()
+    plt.show()
 ```
 
 
@@ -28,10 +41,6 @@ x_in = np.linspace(-2.0, 2.0, 512)
 f = sympy.Abs(x)
 AD1 = sympy.integrate(f, x)
 AD2 = sympy.integrate(AD1, x)
-
-f_out = lambdify(x, f, 'numpy')(x_in)
-AD1_out = lambdify(x, AD1, 'numpy')(x_in)
-AD2_out = lambdify(x, AD2, 'numpy')(x_in)
 ```
 
 ```{python}
@@ -52,12 +61,7 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, "k-", label="f")
-plt.plot(x_in, AD1_out, "k--", label="AD1")
-plt.plot(x_in, AD2_out, "k:", label="AD2")
-plt.grid()
-plt.legend()
-plt.show()
+plot_nonlinearity(f, AD1, AD2)
 ```
 
 ### Half-Wave Rectifier
@@ -67,10 +71,6 @@ plt.show()
 f = sympy.Piecewise((x, sympy.Gt(x, 0)), (0, True))
 AD1 = sympy.integrate(f, x)
 AD2 = sympy.integrate(AD1, x)
-
-f_out = lambdify(x, f, 'numpy')(x_in)
-AD1_out = lambdify(x, AD1, 'numpy')(x_in)
-AD2_out = lambdify(x, AD2, 'numpy')(x_in)
 ```
 
 ```{python}
@@ -91,12 +91,7 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, "k-", label="f")
-plt.plot(x_in, AD1_out, "k--", label="AD1")
-plt.plot(x_in, AD2_out, "k:", label="AD2")
-plt.grid()
-plt.legend()
-plt.show()
+plot_nonlinearity(f, AD1, AD2)
 ```
 
 ### Schottky-Diode Rectifier
@@ -106,10 +101,6 @@ plt.show()
 f = 0.2 * (sympy.exp(1.79*x) - 1.0)
 AD1 = sympy.integrate(f, x)
 AD2 = sympy.integrate(AD1, x)
-
-f_out = lambdify(x, f, 'numpy')(x_in)
-AD1_out = lambdify(x, AD1, 'numpy')(x_in)
-AD2_out = lambdify(x, AD2, 'numpy')(x_in)
 ```
 
 ```{python}
@@ -130,12 +121,7 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, "k-", label="f")
-plt.plot(x_in, AD1_out, "k--", label="AD1")
-plt.plot(x_in, AD2_out, "k:", label="AD2")
-plt.grid()
-plt.legend()
-plt.show()
+plot_nonlinearity(f, AD1, AD2)
 ```
 
 ### Soft-Clipper (3rd Degree)
@@ -150,10 +136,6 @@ y = x * norm_factor
 f = (y - (y**degree) * one_over_degree)*inv_norm
 AD1 = sympy.integrate(f, x)
 AD2 = sympy.integrate(AD1, x)
-
-f_out = lambdify(x, f, 'numpy')(x_in)
-AD1_out = lambdify(x, AD1, 'numpy')(x_in)
-AD2_out = lambdify(x, AD2, 'numpy')(x_in)
 ```
 
 ```{python}
@@ -174,12 +156,7 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, "k-", label="f")
-plt.plot(x_in, AD1_out, "k--", label="AD1")
-plt.plot(x_in, AD2_out, "k:", label="AD2")
-plt.grid()
-plt.legend()
-plt.show()
+plot_nonlinearity(f, AD1, AD2)
 ```
 
 
@@ -195,10 +172,6 @@ y = x * norm_factor
 f = (y - (y**degree) * one_over_degree)*inv_norm
 AD1 = sympy.integrate(f, x)
 AD2 = sympy.integrate(AD1, x)
-
-f_out = lambdify(x, f, 'numpy')(x_in)
-AD1_out = lambdify(x, AD1, 'numpy')(x_in)
-AD2_out = lambdify(x, AD2, 'numpy')(x_in)
 ```
 
 ```{python}
@@ -219,12 +192,7 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, "k-", label="f")
-plt.plot(x_in, AD1_out, "k--", label="AD1")
-plt.plot(x_in, AD2_out, "k:", label="AD2")
-plt.grid()
-plt.legend()
-plt.show()
+plot_nonlinearity(f, AD1, AD2)
 ```
 
 ### Soft-Clipper Exponential
@@ -234,10 +202,6 @@ plt.show()
 f = sympy.Piecewise((1-sympy.exp(-x), sympy.Gt(x, 0)), (-1+sympy.exp(x), True))
 AD1 = sympy.integrate(f, x)
 AD2 = sympy.integrate(AD1, x)
-
-f_out = lambdify(x, f, 'numpy')(x_in)
-AD1_out = lambdify(x, AD1, 'numpy')(x_in)
-AD2_out = lambdify(x, AD2, 'numpy')(x_in)
 ```
 
 ```{python}
@@ -258,12 +222,7 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, "k-", label="f")
-plt.plot(x_in, AD1_out, "k--", label="AD1")
-plt.plot(x_in, AD2_out, "k:", label="AD2")
-plt.grid()
-plt.legend()
-plt.show()
+plot_nonlinearity(f, AD1, AD2)
 ```
 
 ### Hard-Clipper
@@ -277,10 +236,6 @@ f = sympy.Piecewise(
 )
 AD1 = sympy.integrate(f, x)
 AD2 = sympy.integrate(AD1, x)
-
-f_out = lambdify(x, f, 'numpy')(x_in)
-AD1_out = lambdify(x, AD1, 'numpy')(x_in)
-AD2_out = lambdify(x, AD2, 'numpy')(x_in)
 ```
 
 ```{python}
@@ -301,12 +256,7 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, "k-", label="f")
-plt.plot(x_in, AD1_out, "k--", label="AD1")
-plt.plot(x_in, AD2_out, "k:", label="AD2")
-plt.grid()
-plt.legend()
-plt.show()
+plot_nonlinearity(f, AD1, AD2)
 ```
 
 ### Sine-Clipper
@@ -316,10 +266,6 @@ plt.show()
 f = -sympy.sin(sympy.pi*0.5*x)
 AD1 = sympy.integrate(f, x)
 AD2 = sympy.integrate(AD1, x)
-
-f_out = lambdify(x, f, 'numpy')(x_in)
-AD1_out = lambdify(x, AD1, 'numpy')(x_in)
-AD2_out = lambdify(x, AD2, 'numpy')(x_in)
 ```
 
 ```{python}
@@ -340,12 +286,7 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, "k-", label="f")
-plt.plot(x_in, AD1_out, "k--", label="AD1")
-plt.plot(x_in, AD2_out, "k:", label="AD2")
-plt.grid()
-plt.legend()
-plt.show()
+plot_nonlinearity(f, AD1, AD2)
 ```
 
 
@@ -356,21 +297,6 @@ plt.show()
 f = sympy.tanh(x)
 AD1 = sympy.integrate(f, x)
 AD2 = sympy.integrate(AD1, x)
-
-f_out = lambdify(x, f, 'numpy')(x_in)
-AD1_out = lambdify(x, AD1, 'numpy')(x_in)
-# AD2_out = lambdify(x, AD2, 'numpy')(x_in)
-```
-
-```{python}
-#| echo: false
-#| fig-align: center
-plt.plot(x_in, f_out, label="f")
-plt.plot(x_in, AD1_out, label="AD1")
-# plt.plot(x_in, AD2_out, label="AD2")
-plt.grid()
-plt.legend()
-plt.show()
 ```
 
 ```{python}
@@ -386,6 +312,12 @@ display_latex(f"$${sympy.latex(AD1)}$$", raw=True)
 ```{python}
 #| echo: false
 display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+#| fig-align: center
+plot_nonlinearity(f, AD1, None)
 ```
 
 ### Overdrive
@@ -399,10 +331,6 @@ f = sympy.Piecewise(
 )
 AD1 = sympy.integrate(f, x)
 AD2 = sympy.integrate(AD1, x)
-
-f_out = lambdify(x, f, 'numpy')(x_in)
-AD1_out = lambdify(x, AD1, 'numpy')(x_in)
-AD2_out = lambdify(x, AD2, 'numpy')(x_in)
 ```
 
 ```{python}
@@ -423,12 +351,7 @@ display_latex(f"$${sympy.latex(AD2)}$$", raw=True)
 ```{python}
 #| echo: false
 #| fig-align: center
-plt.plot(x_in, f_out, "k-", label="f")
-plt.plot(x_in, AD1_out, "k--", label="AD1")
-plt.plot(x_in, AD2_out, "k:", label="AD2")
-plt.grid()
-plt.legend()
-plt.show()
+plot_nonlinearity(f, AD1, AD2)
 ```
 
 ### Chebyshev Polynomials
@@ -819,5 +742,6 @@ plt.show()
 - <https://ccrma.stanford.edu/~jatin/Notebooks/adaa.html>
 - <https://github.com/jatinchowdhury18/ADAA>
 - <https://github.com/jatinchowdhury18/audio_dspy/blob/master/audio_dspy/nonlinearities.py>
+- <http://www.dangelo.audio/#research>
 - [ARBITRARY-ORDER IIR ANTIDERIVATIVE ANTIALIASING](https://www.dafx.de/paper-archive/2021/proceedings/papers/DAFx20in21_paper_27.pdf)
 

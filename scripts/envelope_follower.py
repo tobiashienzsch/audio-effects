@@ -43,30 +43,31 @@ class PeakEnvelopeFollower:
 
 
 class TransientShaper:
-    def __init__(self, intensity, fs) -> None:
-        self.intensity = intensity
+    def __init__(self, attack, sustain, fs) -> None:
+        self.attack = attack
+        self.sustain = sustain
 
-        self.attack1 = PeakEnvelopeFollower(00.1, 1000.0, 0.01, fs)
+        self.attack1 = PeakEnvelopeFollower(1.0, 1000.0, 0.01, fs)
         self.attack2 = PeakEnvelopeFollower(50.0, 1000.0, 0.01, fs)
 
-        sustain = 1000.0 * intensity
-        self.sustain1 = PeakEnvelopeFollower(1.0, sustain, 0.01, fs)
-        self.sustain2 = PeakEnvelopeFollower(1.0, sustain/20.0, 0.01, fs)
+        max_sustain = 1000.0 * sustain
+        self.sustain1 = PeakEnvelopeFollower(1.0, max_sustain, 0.01, fs)
+        self.sustain2 = PeakEnvelopeFollower(1.0, max_sustain/20.0, 0.01, fs)
 
     def process(self, x):
         x_abs = np.abs(x)
 
         aenv1 = 20*np.log10(self.attack1.process(x_abs)+1e-9)
         aenv2 = 20*np.log10(self.attack2.process(x_abs)+1e-9)
-        adiff = np.clip((aenv1-aenv2)*self.intensity, -60.0, +60.0)
+        adiff = np.clip((aenv1-aenv2)*self.attack, -60.0, +60.0)
         again = 10.0**(adiff/20.0)
 
         senv1 = 20*np.log10(self.sustain1.process(x_abs)+1e-9)
         senv2 = 20*np.log10(self.sustain2.process(x_abs)+1e-9)
-        sdiff = (senv1-senv2)*self.intensity
+        sdiff = (senv1-senv2)*self.sustain
         sgain = 10.0**(sdiff/20.0)
 
-        return np.copy(x)*(again*sgain)
+        return np.copy(x)*(again*sgain), again, sgain
 
 
 fs = 512
@@ -74,12 +75,20 @@ t = np.linspace(0.0, 1.0, fs)
 pulse = np.zeros(fs)
 pulse[fs//100:fs//100*4] = 1.0
 pulse = np.sin(2 * np.pi * 30.0 * t)*0.25
-pulse[0:fs//8] *= np.linspace(0.0,1.0,fs//8)
+pulse[0:fs//8] *= np.linspace(0.0, 1.0, fs//8)
 pulse[fs//8*2:fs//8*4] *= 4.0
 
-plt.plot(t, pulse, label="In")
-# plt.plot(t, TransientShaper(0.1, fs).process(pulse), label="Out - 0.1")
-plt.plot(t, TransientShaper(0.75, fs).process(pulse), label="Out - 0.75")
-plt.grid()
-plt.legend()
+out, again, sgain = TransientShaper(0.15, 0.75, fs).process(pulse)
+
+fif, (ax1, ax2) = plt.subplots(2, 1, tight_layout=True)
+ax1.plot(t, pulse, label="In")
+ax1.plot(t, out, label="Out")
+ax1.grid()
+ax1.legend()
+
+ax2.plot(t, again, label="Attack")
+ax2.plot(t, sgain, label="Sustain")
+ax2.grid()
+ax2.legend()
+
 plt.show()

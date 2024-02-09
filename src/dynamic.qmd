@@ -41,6 +41,7 @@ class PeakEnvelopeFollower:
 ```{python}
 #| echo: false
 #| fig-cap: "Envelope Follower Output (Target -50dB)"
+#| fig-align: center
 import matplotlib.pyplot as plt
 
 def to_db(x):
@@ -103,6 +104,7 @@ plt.show()
 ```{python}
 #| echo: false
 #| fig-cap: "Hard vs Soft-Knee Gain Computer"
+#| fig-align: center
 from IPython.display import display, display_latex, Math, Latex
 import matplotlib.pyplot as plt
 import numpy as np
