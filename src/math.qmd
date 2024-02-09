@@ -1,0 +1,44 @@
+# Math
+
+```{python}
+#| echo: false
+from IPython.display import display, display_latex, Math, Latex
+import numpy as np
+import sympy
+
+sympy.init_printing(latex_mode='equation*', wrap_line=False)
+```
+
+## Unit
+
+### Decibel
+
+```{python}
+#| echo: false
+x = sympy.Symbol('x', real=True)
+dB = 20*sympy.log(x, 10)
+display_latex(f"$${sympy.latex(dB)}$$", raw=True)
+```
+
+```{python}
+#| echo: false
+gain = 10**(x/20)
+display_latex(f"$${sympy.latex(gain)}$$", raw=True)
+```
+
+
+### Hertz
+
+### Sample-Rate
+
+### Block-Rate
+
+## Scale
+
+### Linear
+
+### Logarithmic
+
+## Complex
+
+### Arithmetic

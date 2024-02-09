@@ -2,7 +2,7 @@
 
 - <http://www.dangelo.audio/#research>
 
-## Nonlinearities
+## Nonlinearity
 
 ```{python}
 #| echo: false
@@ -475,6 +475,7 @@ plt.legend()
 plt.show()
 ```
 
+## Oversampling
 
 
 ## Antiderivative Anti-Aliasing

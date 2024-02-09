@@ -7,9 +7,11 @@ book:
   chapters:
     - index.qmd
     - src/intro.qmd
+    - src/math.qmd
     - src/filter.qmd
     - src/dynamic.qmd
     - src/distortion.qmd
+    - src/noise.qmd
     - src/frequency.qmd
     - src/delay.qmd
     - src/reverb.qmd

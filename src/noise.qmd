@@ -1,0 +1,19 @@
+# Noise
+
+## Pseudorandom Number Generator
+
+## White Noise
+
+## Pink Noise
+
+- [Generating pink noise](https://www.dsprelated.com/showarticle/908.php)
+- [DSP generation of Pink (1/f) Noise](https://www.firstpr.com.au/dsp/pink-noise)
+- [A NEW SHADE OF PINK](https://github.com/Stenzel/newshadeofpink)
+
+## Dithering
+
+### Rectangle
+
+### Triangle
+
+### Noise Shaping

@@ -91,12 +91,13 @@ inv_norm = 1 / norm_factor
 
 y = x * norm_factor
 f = (y - (y**degree) * one_over_degree)*inv_norm
+f = x**2
 AD1 = sympy.integrate(f, x)
 AD2 = sympy.integrate(AD1, x)
 
-# print(f)
-# print(AD1)
-# print(AD2)
+print(f)
+print(AD1)
+print(AD2)
 
 expand_opt = create_expand_pow_optimization(5)
 f_opt = optimize(expand_opt(sympy.simplify(f)), optims_c99)
