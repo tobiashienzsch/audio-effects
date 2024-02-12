@@ -137,3 +137,9 @@ There are several algorithms that can be used to test the quality of an audio re
 5. **Perceptual Metrics:** Like the PEAQ (Perceptual Evaluation of Audio Quality) or ITU-R BS.1770, which are not only based on the signal but also on psychoacoustic and auditory perception. These metrics take into account not just the technical characteristics of the sound but also how it is perceived by the human ear.
 
 It's worth noting that these metrics are not mutually exclusive and can provide complementary information about the performance of an audio resampling algorithm. For example, PSNR and MSE are good indicators of the quantization error introduced by the algorithm, while SSIM and PEAQ provide more information about the perceived quality of the resampled audio. Additionally, it's worth to evaluate the performance of the algorithm on a wide variety of audio content, to check if it performs well across different types of audio material.
+
+
+- <http://courses.itee.uq.edu.au/elec3004/2012s1/_lectures/ELEC3004.Lecture14.pdf>
+- <https://github.com/zephray/SampleRateConverter>
+- <https://gist.github.com/dv1/dfeabd20fd2bcb5f702fdd12dc192c97>
+- <https://github.com/nagos/farrow-resampler>
