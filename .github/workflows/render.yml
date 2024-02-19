@@ -1,9 +1,9 @@
 name: Render
 
 on:
-  workflow_dispatch:
   push:
-    branches: main
+    tags:
+      - v*
 
 permissions:
   contents: write
@@ -36,3 +36,12 @@ jobs:
           path: _book
           if-no-files-found: error
           retention-days: 7
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: false
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            ./_book/*.pdf
