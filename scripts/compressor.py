@@ -2,14 +2,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sympy
 from sympy.utilities.codegen import codegen
+from sympy.utilities.lambdify import lambdify
 from sympy.codegen.rewriting import create_expand_pow_optimization, optimize, optims_c99
 
 sympy.init_printing(use_unicode=False, wrap_line=False)
 
 x = sympy.Symbol('x', real=True)
-T = sympy.Symbol('T')
-R = sympy.Symbol('R')
-W = sympy.Symbol('W')
+T = sympy.Symbol('T', real=True)
+R = sympy.Symbol('R', real=True)
+W = sympy.Symbol('W', real=True)
 
 # T = sympy.Rational(-24, 1)
 # R = sympy.Rational(6, 1)
@@ -22,20 +23,20 @@ hard = sympy.Piecewise((x, sympy.Le(x, T)), (T+(x-T)/R, True))
 soft = sympy.Piecewise(
     (x, sympy.Lt(2*(x-T), -W)),
     (x+(1/R-1)*((x-T+W/2)**2)/(2*W), sympy.Le(2*sympy.Abs(x-T), W)),
-    (T+(x-T)/R, sympy.Gt(2*(x-T), W)),
+    (T+(x-T)/R, True), #sympy.Gt(2*(x-T), W)
 )
-
-f = x+(1/R-1)*((x-T+W/2)**2)/(2*W)
+f = soft
+# f = x+(1/R-1)*((x-T+W/2)**2)/(2*W)
 AD1 = sympy.integrate(f, x)
 AD2 = sympy.integrate(AD1, x)
 
 expand_opt = create_expand_pow_optimization(5)
 f_opt = optimize(expand_opt(sympy.simplify(f)), optims_c99)
-AD1_opt = optimize(expand_opt(sympy.simplify(AD1)), optims_c99)
-AD2_opt = optimize(expand_opt(sympy.simplify(AD2)), optims_c99)
+# AD1_opt = optimize(expand_opt(sympy.simplify(AD1)), optims_c99)
+# AD2_opt = optimize(expand_opt(sympy.simplify(AD2)), optims_c99)
 
 [(c_name, c_code), (h_name, c_header)] = codegen(
-    [("f", f_opt), ("AD1", AD1_opt), ("AD2", AD2_opt)],
+    [("f", f)],
     "C99",
     header=False,
     empty=True
