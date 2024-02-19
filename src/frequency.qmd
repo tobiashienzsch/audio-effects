@@ -337,3 +337,9 @@ The function first calculates the number of frames by dividing the length of the
 - adding current and next frame to create overlap
 - updating the write_pointer
 - adding the overlap to the output array
+
+
+## Frequency Crusher
+
+- Frequency Domain Effect
+- FFT -> Select loudest bins -> IFFT
