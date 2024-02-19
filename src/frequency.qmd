@@ -1,5 +1,7 @@
 # Frequency
 
+## Chorus
+
 ## Phaser
 
 ```py
@@ -116,6 +118,46 @@ class Phaser:
         self.phase = 2 * np.pi * self.lfo_frequency * len(audio) / self.sample_rate + self.phase
         return output
 ```
+
+## Vocoder
+
+```{mermaid}
+%%| label: fig-vocoder-signalflow
+%%| fig-cap: "Signalflow of a Vocoder"
+flowchart LR
+    subgraph AnalysisFilter[Filterbank]
+    end
+
+    subgraph AnalysisEnvelope[Followers]
+        ENV1[Envelope 1]
+        ENV2[Envelope 2]
+    end
+
+    subgraph SynthesisFilter[Filterbank]
+    end
+
+    subgraph Synth
+        VCA1
+        VCA2
+    end
+
+    
+    AnalysisSignal[Analysis Signal] --> |Signal| AnalysisFilter
+    AnalysisFilter --> |Signals| ENV1
+    AnalysisFilter --> |Signals| ENV2
+    ENV1 --> |CV| VCA1
+    ENV2 --> |CV| VCA2
+    
+    SynthesisSignal[Synthesis Signal] --> |Signal| SynthesisFilter
+    SynthesisFilter --> |Signal| VCA1
+    SynthesisFilter --> |Signal| VCA2
+    Synth --> |Signal| Output
+```
+
+- <https://github.com/egaudrain/vocoder>
+- <https://github.com/cwilso/Vocoder>
+- <https://support.apple.com/de-de/guide/logicpro/lgsifc369f38/mac>
+- <https://support.apple.com/de-de/guide/logicpro/lgsifc36963e/10.8/mac/13.5>
 
 ## Sub-Harmonic Generator
 

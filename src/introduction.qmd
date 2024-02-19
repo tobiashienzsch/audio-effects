@@ -3,3 +3,9 @@
 This is a book created from markdown and executable code.
 
 See @Pirkle2019 for additional discussion of literate programming.
+
+## Code Examples
+
+### Python
+
+- [Numpy]()
